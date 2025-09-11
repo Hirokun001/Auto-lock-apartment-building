@@ -123,18 +123,29 @@
         zoom: 16
       });
 
-      // マンションマーカー追加
-      apartments.forEach(apt => {
-        const marker = new google.maps.Marker({
-          position: apt.position,
-          map: map,
-          title: apt.name
-        });
+// スマホ判定
+const isMobile = window.innerWidth <= 768;
 
-        marker.addListener("click", () => {
-          window.open(apt.sheetUrl, "_blank");
-        });
-      });
+// マンションマーカー追加
+apartments.forEach(apt => {
+  const marker = new google.maps.Marker({
+    position: apt.position,
+    map: map,
+    title: apt.name,
+    icon: {
+      url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png", // Google標準ピン
+      scaledSize: isMobile ? new google.maps.Size(48, 48) : new google.maps.Size(32, 32) // スマホなら大きめ
+    }
+  });
+
+  marker.addListener("click", () => {
+    window.open(apt.sheetUrl, "_blank");
+  });
+});
+
+
+
+
 
       // 現在地を取得して表示
       if (navigator.geolocation) {
@@ -152,7 +163,7 @@
               zIndex: 1,
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 14, // サイズ大きめ
+                scale: 24, // サイズ大きめ
                 fillColor: "black",
                 fillOpacity: 0.3,
                 strokeWeight: 0
@@ -167,13 +178,35 @@
               title: "現在地",
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 10, // サイズを大きめに変更
+                scale: 18, // サイズを大きめに変更
                 fillColor: "#4285F4",
                 fillOpacity: 1,
                 strokeWeight: 2,
                 strokeColor: "white"
               }
             });
+
+            // --- アニメーション処理（常に動く） ---
+            let growing = true;
+            let currentScale = 18;
+            setInterval(() => {
+              if (growing) {
+                currentScale += 0.2; // 拡大スピード
+                if (currentScale >= 22) growing = false; // 上限
+              } else {
+                currentScale -= 0.2; // 縮小スピード
+                if (currentScale <= 18) growing = true; // 下限
+              }
+
+              userMarker.setIcon({
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: currentScale,
+                fillColor: "#4285F4",
+                fillOpacity: 1,
+                strokeWeight: 2,
+                strokeColor: "white"
+              });
+            }, 100); // 100msごとに更新（約10FPS）
 
             map.setCenter(userPos);
           },
