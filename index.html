@@ -4,24 +4,13 @@
   <meta charset="utf-8">
   <title>プレサンスロジェ草津シエル 地図＋スプレッドシート</title>
   <style>
-    body, html { margin:0; padding:0; height:100%; display:flex; flex-direction:column; }
-    #map { flex:1; }
-    #controls { padding:10px; background:#fafafa; border-top:1px solid #ccc; display:flex; align-items:center; gap:10px; }
-    #info { font-size:14px; color:#333; }
+    body, html { margin:0; padding:0; height:100%; }
+    #map { width:100%; height:100%; }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div id="controls">
-    <label for="mode">移動手段: </label>
-    <select id="mode">
-      <option value="WALKING">徒歩</option>
-      <option value="DRIVING">車</option>
-      <option value="BICYCLING">自転車</option>
-    </select>
-    <div id="info">マンションをクリックすると、ルートと距離を表示します。</div>
-  </div>
-
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBaxgKJTUw1-0gl1pks-ATIc6iw1HITZyg&callback=initMap" async defer></script>
   <script>
     const apartments = [
       {
@@ -30,26 +19,36 @@
         sheetUrl: "https://docs.google.com/spreadsheets/d/1C-uSw46BRsJm24PjUI021dkoiSI-D1fRKuNigim6hxo/edit"
       },
       {
-        name: "別のマンション例",
-        position: { lat: 35.020000, lng: 135.965000 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1C-uSw46BRsJm24PjUI021dkoiSI-D1fRKuNigim6hxo/edit"
+        name: "コスモ草津(夜)",
+        position: { lat: 35.0173991, lng: 135.9598398 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1o4RwGf_t96GtdFDp7jNkVDMSFr22Vhz3-ScqZ9wOoDc/edit?usp=sharing"
+      },
+            {
+        name: "ココスモ草津Ⅱ (夜) ",
+        position: { lat: 35.0176379, lng: 135.9587089 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1M8uhi42_NvaVrYCA59XLDuCrLYcn5t8XlrLv-g8-dEI/edit?usp=sharing"
+      },
+                  {
+        name: "リベルテ草津",
+        position: { lat: 35.018516, lng: 135.9591753 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1bVCC-vuvmNAqsKfs3mvRXWGhKCE7XHeAFeJ_nwWRzWA/edit?usp=sharing"
+      },
+            {
+        name: "草津パークホームズ",
+        position: { lat: 35.0122945, lng: 135.9559939 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1ThqZh2LcPcwXBIP630vr3b_ZCR26-npxVy_-347ORRY/edit?usp=sharing"
       }
     ];
 
     let map;
-    let directionsService;
-    let directionsRenderer;
-    let userPos = null;
-    let selectedApt = null;
+    let userMarker = null;
+    let shadowMarker = null;
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
         center: apartments[0].position,
         zoom: 16
       });
-
-      directionsService = new google.maps.DirectionsService();
-      directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
 
       // マンションマーカー追加
       apartments.forEach(apt => {
@@ -61,31 +60,41 @@
 
         marker.addListener("click", () => {
           window.open(apt.sheetUrl, "_blank");
-          selectedApt = apt;
-          if (userPos) {
-            showRouteAndDistance(userPos, apt);
-          } else {
-            document.getElementById("info").innerText = "現在地が未取得のためルートを表示できません。";
-          }
         });
       });
 
-      // 現在地を取得
+      // 現在地を取得して表示
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           position => {
-            userPos = new google.maps.LatLng(
-              position.coords.latitude,
-              position.coords.longitude
-            );
+            const userPos = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
 
-            new google.maps.Marker({
+            // 影マーカー（少し大きめ・薄黒）
+            shadowMarker = new google.maps.Marker({
               position: userPos,
               map: map,
+              zIndex: 1,
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 14, // サイズ大きめ
+                fillColor: "black",
+                fillOpacity: 0.3,
+                strokeWeight: 0
+              }
+            });
+
+            // 本体マーカー（大きめの青丸）
+            userMarker = new google.maps.Marker({
+              position: userPos,
+              map: map,
+              zIndex: 2,
               title: "現在地",
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 8,
+                scale: 10, // サイズを大きめに変更
                 fillColor: "#4285F4",
                 fillOpacity: 1,
                 strokeWeight: 2,
@@ -97,50 +106,13 @@
           },
           error => {
             console.error("Geolocation error:", error);
-            document.getElementById("info").innerText = "現在地を取得できませんでした。";
+            alert("現在地を取得できませんでした。");
           }
         );
       } else {
-        document.getElementById("info").innerText = "ブラウザが位置情報に対応していません。";
+        alert("このブラウザは現在地取得に対応していません。");
       }
-
-      // 移動手段の切り替え
-      document.getElementById("mode").addEventListener("change", () => {
-        if (userPos && selectedApt) {
-          showRouteAndDistance(userPos, selectedApt);
-        }
-      });
-    }
-
-    // 選択したマンションまでルートと距離を表示
-    function showRouteAndDistance(origin, apt) {
-      const travelMode = document.getElementById("mode").value;
-
-      const request = {
-        origin: origin,
-        destination: new google.maps.LatLng(apt.position.lat, apt.position.lng),
-        travelMode: google.maps.TravelMode[travelMode]
-      };
-
-      directionsService.route(request, (result, status) => {
-        if (status === "OK") {
-          directionsRenderer.setDirections(result);
-          const routeLeg = result.routes[0].legs[0];
-          const distanceText = routeLeg.distance.text;
-          const durationText = routeLeg.duration.text;
-
-          document.getElementById("info").innerText =
-            `現在地から「${apt.name}」までの距離: ${distanceText}（所要時間: ${durationText}, モード: ${travelMode}）`;
-        } else {
-          console.error("Directions error:", status);
-          document.getElementById("info").innerText = "ルートを表示できませんでした: " + status;
-        }
-      });
     }
   </script>
-
-  <!-- geometry ライブラリを必ず追加 -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBaxgKJTUw1-0gl1pks-ATIc6iw1HITZyg&callback=initMap&libraries=geometry" async defer></script>
 </body>
 </html>
-
