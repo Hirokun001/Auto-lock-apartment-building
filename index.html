@@ -145,14 +145,16 @@ async function loadApartmentMarker(apt) {
    マーカー作成（クリック可能サイズに調整済み）
 ====================================================== */
 function placeMarker(apt, color) {
+
   const icon = {
     path: pathData,
     fillColor: color,
-    fillOpacity: 0.95,
+    fillOpacity: 1,
     strokeColor: "white",
     strokeWeight: 2,
-    scale: 0.12,   // ← 大きさを修正
-    anchor: new google.maps.Point(500, 1500) // ← クリック位置が正しい
+    scale: 0.12,
+    anchor: new google.maps.Point(500, 1500),
+    labelOrigin: new google.maps.Point(500, 900)
   };
 
   const marker = new google.maps.Marker({
@@ -239,3 +241,4 @@ function animateUserMarker() {
 </script>
 </body>
 </html>
+
