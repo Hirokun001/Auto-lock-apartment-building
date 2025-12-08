@@ -142,7 +142,7 @@
         if (!m) return null;
         const sheetId = m[1];
 
-        // gid を取得
+        // gid を取得 (gidがなければ0を使用)
         const gidMatch = sheetUrl.match(/gid=([0-9]+)/);
         const gid = gidMatch ? gidMatch[1] : 0;
 
@@ -225,8 +225,13 @@
        マーカー追加（動的アイコンカラー）
        ------------------------------------------- */
     async function addApartmentMarkers() {
-      for (const apt of apartments) {
-        const status = await fetchVisitStatus(apt);
+      // すべてのアパートメントのステータス取得を並行して実行 (パフォーマンス向上)
+      const statusPromises = apartments.map(apt => fetchVisitStatus(apt));
+      const statuses = await Promise.all(statusPromises);
+      
+      for (let i = 0; i < apartments.length; i++) {
+        const apt = apartments[i];
+        const status = statuses[i]; // 並行処理で取得したステータスを使用
 
         let fillColor = "#00A0A0";
         if (status.color === "yellow") fillColor = "#FBC02D";
@@ -235,14 +240,43 @@
         const pathData =
         "M1662.11,944.38c0-306.13-248.18-554.32-554.32-554.32-29.74,0-58.89,2.36-87.35,6.92-264.64,41.86-466.93,271.01-466.93,547.4,0,85.15,19.19,165.84,53.57,237.93,15.53,32.7,34.27,63.56,55.63,92.33h-.11l445.23,590.94,441.56-586.19h-.07c70.74-93.08,112.79-209.13,112.79-335.02ZM1107.8,1193.08c-99.14,0-184.7-57.99-224.65-141.94-15.45-32.36-24.06-68.57-24.06-106.77,0-124.05,90.76-226.86,209.54-245.64,12.76-2.06,25.85-3.11,39.17-3.11,137.37,0,248.75,111.37,248.75,248.75s-111.37,248.71-248.75,248.71Z";
 
+        // ① scale を先に決める（必要ならここを変更）
+        const scale = 0.07;
+
+        // ② pathData から数値を抜き出し、座標ペアで bbox を計算する
+        const nums = pathData.match(/-?\d+\.?\d*/g).map(Number);
+
+        // path の数値並びはコマンドによって不規則だが、座標が現れる箇所は x,y のペアが基本。
+        // 安全のため、偶数インデックスを x、奇数インデックスを y として bbox を出す。
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (let j = 0; j < nums.length - 1; j += 2) {
+          const x = nums[j];
+          const y = nums[j + 1];
+          if (typeof x === "number" && typeof y === "number") {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+
+        // フォールバック（もし抽出失敗したら既定値）
+        if (!isFinite(minX) || !isFinite(minY)) {
+          minX = 0; minY = 0; maxX = 1662; maxY = 1193;
+        }
+
+        // ③ アンカーは「中央下」なので、横は (minX+maxX)/2、縦は maxY。Google Maps の anchor は**スケール後のピクセル値**で指定する。
+        const anchorX = ((minX + maxX) / 2) * scale;
+        const anchorY = (maxY) * scale;
+
         const icon = {
           path: pathData,
           fillColor: fillColor,
           fillOpacity: 0.95,
           strokeColor: "white",
           strokeWeight: 2,
-          scale: 0.07,
-          anchor: new google.maps.Point(58.2, 124.9)
+          scale: scale,
+          anchor: new google.maps.Point(anchorX, anchorY)
         };
 
         const marker = new google.maps.Marker({
@@ -353,5 +387,3 @@
 
 </body>
 </html>
-
-
