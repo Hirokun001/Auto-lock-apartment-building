@@ -21,7 +21,7 @@
         name: "プレサンスロジェ草津シエル",
         position: { lat: 35.02332033360808, lng: 135.96861511597268 },
         sheetUrl: null,
-        active: false
+        active: false // ★この設定がグレー・クリック不可の条件となります
       },
       {
         name: "シルクトレーテA棟",
@@ -153,7 +153,8 @@
        スプレッドシートから訪問状況を取得
        ------------------------------------------- */
         async function fetchVisitStatus(apt) {
-          if (!apt.sheetUrl) return { color: "default" };
+          // active: false の場合はシートの確認をスキップし、デフォルトを返す
+          if (!apt.active || !apt.sheetUrl) return { color: "default" };
 
           const csvUrl = convertSheetToCsvUrl(apt.sheetUrl);
           if (!csvUrl) return { color: "default" };
@@ -229,86 +230,50 @@
       const statusPromises = apartments.map(apt => fetchVisitStatus(apt));
       const statuses = await Promise.all(statusPromises);
 
-      // ★★★ 修正箇所: 固定するピクセルサイズを調整 (小さくする) ★★★
-      const FIXED_WIDTH_PX = 30; // 45 -> 30 へ縮小
-      const FIXED_HEIGHT_PX = 30; // 40 -> 30 へ縮小
-      // ★★★ ------------------------------------------------- ★★★
-
       for (let i = 0; i < apartments.length; i++) {
         const apt = apartments[i];
         const status = statuses[i];
 
-        let fillColor = "#00A0A0";
-        if (status.color === "yellow") fillColor = "#FBC02D";
-        if (status.color === "red") fillColor = "#E53935";
+        let fillColor;
+        let isClickable = true;
 
-    const pathData =
-    "M1662.11,944.38c0-306.13-248.18-554.32-554.32-554.32-29.74,0-58.89,2.36-87.35,6.92-264.64,41.86-466.93,271.01-466.93,547.4,0,85.15,19.19,165.84,53.57,237.93,15.53,32.7,34.27,63.56,55.63,92.33h-.11l445.23,590.94,441.56-586.19h-.07c70.74-93.08,112.79-209.13,112.79-335.02ZM1107.8,1193.08c-99.14,0-184.7-57.99-224.65-141.94-15.45-32.36-24.06-68.57-24.06-106.77,0-124.05,90.76-226.86,209.54-245.64,12.76-2.06,25.85-3.11,39.17-3.11,137.37,0,248.75,111.37,248.75,248.75s-111.37,248.71-248.75,248.71Z";
+        // ★修正ポイント：active: falseの場合はグレーに固定
+        if (apt.active === false) {
+            fillColor = "#808080"; // グレーに設定
+            isClickable = false;    // クリック不可
+        } else {
+            // active: true の場合のカラーリングロジック
+            fillColor = "#00A0A0";
+            if (status.color === "yellow") fillColor = "#FBC02D";
+            if (status.color === "red") fillColor = "#E53935";
+        }
 
-    // ② pathData から数値を抜き出し、座標ペアで bbox を計算する
-    const nums = pathData.match(/-?\d+\.?\d*/g).map(Number);
+        const pathData =
+        "M1662.11,944.38c0-306.13-248.18-554.32-554.32-554.32-29.74,0-58.89,2.36-87.35,6.92-264.64,41.86-466.93,271.01-466.93,547.4,0,85.15,19.19,165.84,53.57,237.93,15.53,32.7,34.27,63.56,55.63,92.33h-.11l445.23,590.94,441.56-586.19h-.07c70.74-93.08,112.79-209.13,112.79-335.02ZM1107.8,1193.08c-99.14,0-184.7-57.99-224.65-141.94-15.45-32.36-24.06-68.57-24.06-106.77,0-124.05,90.76-226.86,209.54-245.64,12.76-2.06,25.85-3.11,39.17-3.11,137.37,0,248.75,111.37,248.75,248.75s-111.37,248.71-248.75,248.71Z";
 
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (let j = 0; j < nums.length - 1; j += 2) {
-      const x = nums[j];
-      const y = nums[j + 1];
-      if (typeof x === "number" && typeof y === "number") {
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-      }
-    }
-
-    // フォールバック（もし抽出失敗したら既定値）
-    if (!isFinite(minX) || !isFinite(minY)) {
-      minX = 0; minY = 0; maxX = 1662; maxY = 1193;
-    }
-    
-    // ③ マーカーがズームでズレないようにするための寸法計算
-    const pathWidth = maxX - minX;
-    const pathHeight = maxY - minY;
-    
-    // アンカーの計算：
-    // 元のアイコンの先端のX座標を計算 (全体の中心)
-    const originalAnchorX = (minX + maxX) / 2;
-    // 元のアイコンの先端のY座標はmaxY（パスの最も下）
-    const originalAnchorY = maxY;
-
-    // ★★★ 修正箇所: アンカー位置の計算 ★★★
-    // 新しいscaledSizeに合わせたピクセル単位のアンカー位置を計算
-    // 1. X座標：オリジナル中心座標をオリジナル幅で正規化し、新しい幅に乗じる。
-    const anchorX = ((originalAnchorX - minX) / pathWidth) * FIXED_WIDTH_PX;
-    
-    // 2. Y座標：オリジナル最下点座標をオリジナル高さで正規化し、新しい高さに乗じる。
-    const anchorY = ((originalAnchorY - minY) / pathHeight) * FIXED_HEIGHT_PX;
-    // ★★★ ---------------------------------- ★★★
-
-    const icon = {
-      path: pathData,
-      fillColor: fillColor,
-      fillOpacity: 0.95,
-      strokeColor: "white",
-      strokeWeight: 2,
-      
-      // size: パス座標系のオリジナルサイズ
-      size: new google.maps.Size(pathWidth, pathHeight),
-      
-      // scaledSize: ズームに関わらず固定するピクセルサイズ 
-      scaledSize: new google.maps.Size(FIXED_WIDTH_PX, FIXED_HEIGHT_PX),
-      
-      // anchor: scaledSizeに対するピクセル単位のアンカー位置 
-      anchor: new google.maps.Point(anchorX, anchorY)
-    };
+        const icon = {
+          path: pathData,
+          fillColor: fillColor,
+          fillOpacity: 0.95,
+          strokeColor: "white",
+          strokeWeight: 2,
+          // サイズとアンカーは index-02.html の設定を維持
+          scale: 0.07, 
+          anchor: new google.maps.Point(831, 1193)
+        };
 
         const marker = new google.maps.Marker({
           position: apt.position,
           map: map,
           title: apt.name,
-          icon: icon
+          icon: icon,
+          draggable: false, 
+          // クリック不可の場合はカーソルをデフォルトにする
+          cursor: isClickable ? 'pointer' : 'default' 
         });
 
-        if (apt.sheetUrl) {
+        // クリックイベントは isClickable が true かつ sheetUrl がある場合のみ追加
+        if (isClickable && apt.sheetUrl) {
           marker.addListener("click", () => {
             window.open(apt.sheetUrl, "_blank");
           });
@@ -344,21 +309,19 @@
               lng: position.coords.longitude
             };
 
-            // 現在地マーカーの影も少し小さくして目立ちすぎないように調整
             shadowMarker = new google.maps.Marker({
               position: userPos,
               map: map,
               zIndex: 1,
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 18, // 24 -> 18 に縮小
+                scale: 24, 
                 fillColor: "black",
                 fillOpacity: 0.3,
                 strokeWeight: 0
               }
             });
 
-            // 現在地マーカーのアニメーションスケールも調整
             userMarker = new google.maps.Marker({
               position: userPos,
               map: map,
@@ -366,7 +329,7 @@
               title: "現在地",
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 12, // 18 -> 12 に縮小
+                scale: 18, 
                 fillColor: "#4285F4",
                 fillOpacity: 1,
                 strokeWeight: 2,
@@ -374,16 +337,16 @@
               }
             });
 
-            // アニメーションの最小・最大スケールも調整
+            // アニメーション
             let growing = true;
-            let currentScale = 12; // 18 -> 12 に変更
+            let currentScale = 18; 
             setInterval(() => {
               if (growing) {
                 currentScale += 0.2;
-                if (currentScale >= 16) growing = false; // 22 -> 16 に変更
+                if (currentScale >= 22) growing = false; 
               } else {
                 currentScale -= 0.2;
-                if (currentScale <= 12) growing = true; // 18 -> 12 に変更
+                if (currentScale <= 18) growing = true; 
               }
 
               userMarker.setIcon({
