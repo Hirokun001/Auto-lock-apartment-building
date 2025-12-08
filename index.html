@@ -13,6 +13,9 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBaxgKJTUw1-0gl1pks-ATIc6iw1HITZyg&callback=initMap" async defer></script>
 
 <script>
+    // ★★★ 共通で利用するシートID (gid) を定義します ★★★
+    const DEFAULT_GID = "1854135294"; 
+
     /* -------------------------------------------
        マンションデータ
        ------------------------------------------- */
@@ -128,8 +131,7 @@
       {
         name: "Casa raffine草津",
         position: { lat: 35.0151292, lng: 135.9645046 },
-        // ★★★ 修正箇所 ★★★
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1WGYDKJQj28mxtCNOBP3MVInTkD0yVOvfirfHZkh6ZHk/edit?gid=1854135294&usp=sharing",
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1WGYDKJQj28mxtCNOBP3MVInTkD0yVOvfirfHZkh6ZHk/edit?usp=sharing", 
         active: true
       }
     ];
@@ -144,9 +146,10 @@
         const sheetId = m[1];
 
         // gid を取得
-        // sheetUrlにgidが含まれる場合、それを優先的に取得
         const gidMatch = sheetUrl.match(/gid=([0-9]+)/);
-        const gid = gidMatch ? gidMatch[1] : 0; // gidがなければデフォルトの0
+        
+        // URLにgidが含まれていない場合は、DEFAULT_GIDを使用
+        const gid = gidMatch ? gidMatch[1] : DEFAULT_GID; 
 
         return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
       }
@@ -169,33 +172,34 @@
             const header = rows[0];
 
             const visitCol = header.indexOf("訪問状況");
-            // A列（インデックス0）を部屋番号の識別子として、部屋の総数を数えるための列とします。
+            // A列（インデックス0）を部屋番号の識別子として使用
             const roomIdentifierCol = 0; 
 
             if (visitCol === -1) return { color: "default" };
 
-            let totalRooms = 0; // 分母: A列に値がある連続した部屋の総数
+            let totalRooms = 0; // 分母: 部屋の総数 (A列orB列に値がある行)
             let enteredCount = 0; // 分子: B列に何らかの値が入力されているセルの数
 
             // B4 (i=3) からCSVデータの最後までをチェック
             for (let i = 3; i < rows.length; i++) {
               const row = rows[i];
               
-              // A列（部屋番号を想定）の値を取得し、部屋の存在を判定
+              // A列（部屋番号を想定）の値を取得
               const roomIdentifier = row[roomIdentifierCol]?.trim().replace(/^"|"$/g, "");
-              
-              // ★ A列が空欄の場合、リスト終了
-              if (!roomIdentifier) {
-                break; 
-              }
-
-              // A列に値があれば、その行は有効な部屋（分母）
-              totalRooms++; 
-
               // B列（訪問状況）の値を取得
               const visit = row[visitCol]?.trim().replace(/^"|"$/g, "");
               
-              // ★ B列に何らかの値が入力されていれば、入力済みとしてカウント（分子）
+              // ★★★ 寛容なリスト終了ロジック ★★★
+              // A列とB列の両方が空欄の場合にのみ、リストの終了と見なす。
+              if (!roomIdentifier && !visit) {
+                break; 
+              }
+
+              // A列かB列のどちらかに値が入っていれば、それは有効な部屋（分母）
+              // ※ breakしなかった行は、必ずどちらかに値が入っているため、無条件でインクリメントします。
+              totalRooms++; 
+
+              // B列に何らかの値が入力されていれば、入力済みとしてカウント（分子）
               if (visit) {
                 enteredCount++;
               }
@@ -206,8 +210,7 @@
             // 入力済みの割合を計算
             const ratio = enteredCount / totalRooms;
 
-            // ★ 新しい判定ロジック
-
+            // 判定ロジック
             // ① 赤色: 100%（すべて入力済み）
             if (ratio >= 1.0) {
               return { color: "red" };
