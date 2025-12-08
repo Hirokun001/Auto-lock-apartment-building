@@ -157,7 +157,7 @@
         const res = await fetch(csvUrl);
         const text = await res.text();
 
-        const rows = text.trim().split("\n").map(r => r.split(","));
+        const rows = text.replace(/\r/g, "").trim().split("\n").map(r => r.split(","));
         const header = rows[0];
 
         const visitCol = header.indexOf("訪問状況");
@@ -175,7 +175,7 @@
           const meet = row[meetCol];
 
           total++;
-          if (visit === "一回目") firstCount++;
+          if (visit.trim().replace(/"/g, "") === "一回目") firstCount++;
           if (meet === "会えた") meetCount++;
         }
 
@@ -325,4 +325,3 @@
 
 </body>
 </html>
-
