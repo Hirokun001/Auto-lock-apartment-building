@@ -152,51 +152,74 @@
     /* -------------------------------------------
        スプレッドシートから訪問状況を取得
        ------------------------------------------- */
-    async function fetchVisitStatus(apt) {
-      if (!apt.sheetUrl) return { color: "blue" };
+        async function fetchVisitStatus(apt) {
+          if (!apt.sheetUrl) return { color: "default" };
 
-      const csvUrl = convertSheetToCsvUrl(apt.sheetUrl);
-      if (!csvUrl) return { color: "blue" };
+          const csvUrl = convertSheetToCsvUrl(apt.sheetUrl);
+          if (!csvUrl) return { color: "default" };
 
-      try {
-        const res = await fetch(csvUrl);
-        const text = await res.text();
+          try {
+            const res = await fetch(csvUrl);
+            const text = await res.text();
 
-        const rows = text.replace(/\r/g, "").trim().split("\n").map(r => r.split(","));
-        const header = rows[0];
+            const rows = text.replace(/\r/g, "").trim().split("\n").map(r => r.split(","));
+            const header = rows[0];
 
-        const visitCol = header.indexOf("訪問状況");
-        const meetCol = header.indexOf("会えた");
+            const visitCol = header.indexOf("訪問状況");
+            const meetCol = header.indexOf("会えた");
 
-        if (visitCol === -1) return { color: "blue" };
+            if (visitCol === -1) return { color: "default" };
 
-        let total = 0;
-        let firstCount = 0;
-        let meetCount = 0;
+            let total = 0;
 
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const visit = row[visitCol];
-          const meet = row[meetCol];
+            // 黄色判定用
+            const okValues = ["一回目", "外国人", "訪問拒否"];
+            let allMatched = true;
 
-          total++;
-          if (visit.trim().replace(/^"|"$/g, "") === "一回目") firstCount++;
-          if (meet === "会えた") meetCount++;
+            // 赤色判定用
+            let meetCount = 0;
+
+            for (let i = 1; i < rows.length; i++) {
+              const row = rows[i];
+
+              const visit = row[visitCol]?.trim().replace(/^"|"$/g, "");
+              const meet = row[meetCol]?.trim().replace(/^"|"$/g, "");
+
+              if (!visit) continue;
+
+              total++;
+
+              // 黄色判定
+              if (!okValues.includes(visit)) {
+                allMatched = false;
+              }
+
+              // 赤色判定（会えた）
+              if (meet === "会えた") {
+                meetCount++;
+              }
+            }
+
+            if (total === 0) return { color: "default" };
+
+            // ① 黄色
+            if (allMatched) {
+              return { color: "yellow" };
+            }
+
+            // ② 赤色（会えたが50%以上）
+            if (meetCount / total >= 0.5) {
+              return { color: "red" };
+            }
+
+            // ③ デフォルト
+            return { color: "default" };
+
+          } catch (e) {
+            console.error("Fetch error:", e);
+            return { color: "default" };
+          }
         }
-
-        if (total > 0 && firstCount === total) {
-          return { color: "yellow" };
-        }
-        if (meetCount / total >= 0.5) {
-          return { color: "red" };
-        }
-
-        return { color: "blue" };
-      } catch (e) {
-        console.error("Fetch error:", e);
-        return { color: "blue" };
-      }
-    }
 
     /* -------------------------------------------
        マーカー追加（動的アイコンカラー）
@@ -330,4 +353,3 @@
 
 </body>
 </html>
-
