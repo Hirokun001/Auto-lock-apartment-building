@@ -167,57 +167,46 @@
             const header = rows[0];
 
             const visitCol = header.indexOf("訪問状況");
-            const meetCol = header.indexOf("会えた");
 
             if (visitCol === -1) return { color: "default" };
 
-            let total = 0; // ★ B列に入力がある行の総数（プルダウンの数）
+            let totalRooms = 0; // プルダウンがある部屋（B4以降で入力済みの連続した行）の総数
+            let enteredCount = 0; // B列に何らかの値が入力されているセルの数
 
-            // 黄色判定用
-            const okValues = ["一回目", "外国人", "訪問拒否"];
-            let allMatched = true;
-
-            // 赤色判定用
-            let meetCount = 0;
-
-            // B4 (i=3) から最後までチェック
+            // B4 (i=3) からCSVデータの最後までをチェック
             for (let i = 3; i < rows.length; i++) {
               const row = rows[i];
-
+              
               const visit = row[visitCol]?.trim().replace(/^"|"$/g, "");
-              const meet = row[meetCol]?.trim().replace(/^"|"$/g, "");
 
-              // ★ 修正: B列（訪問状況）が空欄の場合、そこで部屋リストが終了したとみなし、処理を中断します
+              // ★ 修正点: B列（訪問状況）が空欄の場合、そこで部屋リストが終了したとみなし、処理を中断（break）します。
               if (!visit) {
-                break; 
+                break;
               }
 
-              total++; // B列に値が入力された行（プルダウン）のみをカウント
+              // ここに到達した場合、その行は「プルダウンのある部屋」であり、「入力済み」であると見なします。
+              totalRooms++; 
+              enteredCount++;
+            } 
 
-              // 黄色判定
-              if (!okValues.includes(visit)) {
-                allMatched = false;
-              }
+            if (totalRooms === 0) return { color: "default" };
 
-              // 赤色判定（会えた）
-              if (meet === "会えた") {
-                meetCount++;
-              }
-            }
+            // 入力済みの割合を計算
+            const ratio = enteredCount / totalRooms;
 
-            if (total === 0) return { color: "default" };
+            // ★ 新しい判定ロジック
 
-            // ① 黄色: total（入力されたプルダウン数）の100%がokValuesに含まれる場合
-            if (allMatched) {
-              return { color: "yellow" };
-            }
-
-            // ② 赤色（会えたが50%以上）
-            if (meetCount / total >= 0.5) {
+            // ① 赤色: 100%（すべて入力済み）
+            if (ratio >= 1.0) {
               return { color: "red" };
             }
-
-            // ③ デフォルト
+            
+            // ② 黄色: 50%以上（50%以上入力済み）
+            if (ratio >= 0.5) {
+              return { color: "yellow" };
+            }
+            
+            // ③ デフォルト（50%未満）
             return { color: "default" };
 
           } catch (e) {
@@ -376,3 +365,5 @@
     }
   </script>
 
+</body>
+</html>
