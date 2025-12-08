@@ -180,7 +180,8 @@
             // 赤色判定用
             let meetCount = 0;
 
-            for (let i = 1; i < rows.length; i++) {
+            // 修正後のループ開始 (B2, B3をスキップするため i=3 から開始)
+            for (let i = 3; i < rows.length; i++) {
               const row = rows[i];
 
               const visit = row[visitCol]?.trim().replace(/^"|"$/g, "");
