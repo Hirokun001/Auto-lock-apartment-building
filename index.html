@@ -180,7 +180,7 @@
           const meet = row[meetCol];
 
           total++;
-          if (visit.trim().replace(/"/g, "") === "一回目") firstCount++;
+          if (visit.trim().replace(/^"|"$/g, "") === "一回目") firstCount++;
           if (meet === "会えた") meetCount++;
         }
 
@@ -205,7 +205,7 @@
       for (const apt of apartments) {
         const status = await fetchVisitStatus(apt);
 
-        let fillColor = "#00A0A0"; // 青緑色
+        let fillColor = "#00A0A0";
         if (status.color === "yellow") fillColor = "#FBC02D";
         if (status.color === "red") fillColor = "#E53935";
 
