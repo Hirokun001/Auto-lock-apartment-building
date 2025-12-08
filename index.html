@@ -158,31 +158,64 @@
       }
     ];
 
+    /* ==========================================
+       Google マップ初期化
+       ========================================== */
+    let map;
+    let userMarker = null;
 
-    /* -------------------------------------------
-       Google シート CSV 化
-       ------------------------------------------- */
-    function convertSheetToCsvUrl(sheetUrl) {
-      const m = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      if (!m) return null;
-      return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv`;
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 35.00, lng: 135.97 },
+        zoom: 14,
+      });
+
+      // マーカー描画
+      apartments.forEach((apt) => loadApartmentMarker(apt));
+
+      // 現在地ボタン
+      document.getElementById("getLocationBtn").addEventListener("click", getLocation);
     }
 
-    /* -------------------------------------------
-       スプレッドシートから訪問状況を取得
-       ------------------------------------------- */
-    async function fetchVisitStatus(apt) {
-      if (!apt.sheetUrl) return { color: "lime" }; // 黄緑（デフォルト）
+    /* ==========================================
+       マーカーの Path（完全版修正済み）
+       ========================================== */
+    const pathData =
+      "M1662.11,944.38c0-306.13-248.18-554.32-554.32-554.32-29.74,0-58.89,2.36-87.35,6.92-264.64,41.86-466.93,271.01-466.93,547.4,0,85.15,19.19,165.84,53.57,237.93,15.53,32.7,34.27,63.56,55.63,92.33h-.11l445.23,590.94,441.56-586.19h-.07c70.74-93.08,112.79-209.13,112.79-335.02ZM1107.8,1193.08c-99.14,0-184.7-57.99-224.65-141.94-15.45-32.36-24.06-68.57-24.06-106.77,0-124.05,90.76-226.86,209.54-245.64,12.76-2.06,25.85-3.11,39.17-3.11,137.37,0,248.75,111.37,248.75,248.75s-111.37,248.71-248.75,248.71Z";
 
-      const csvUrl = convertSheetToCsvUrl(apt.sheetUrl);
+    /* ==========================================
+       マーカーアイコンを動的生成する関数
+       ========================================== */
+    function createMarkerIcon(color) {
+      return {
+        path: pathData,
+        fillColor: color,
+        fillOpacity: 1,
+        strokeWeight: 1,
+        strokeColor: "#333",
+        scale: 0.02,
+        anchor: new google.maps.Point(500, 1500)
+      };
+    }
+
+    /* ==========================================
+       Google シート CSV を読み込み → 色を決定
+       ========================================== */
+    async function loadApartmentMarker(apt) {
+      // アクティブでない（非対象）は黄緑
+      if (!apt.active || !apt.sheetUrl) {
+        placeMarker(apt, "limegreen");
+        return;
+      }
 
       try {
+        const csvUrl = apt.sheetUrl.replace("/edit?usp=sharing", "/export?format=csv");
         const res = await fetch(csvUrl);
         const text = await res.text();
+        const rows = text.split("\n").map((r) => r.split(","));
 
-        const rows = text.trim().split("\n").map(r => r.split(","));
+        // 列名行を取得
         const header = rows[0];
-
         const visitCol = header.indexOf("訪問状況");
         const meetCol = header.indexOf("会えた");
 
@@ -190,146 +223,131 @@
         let firstCount = 0;
         let meetCount = 0;
 
+        // === 修正済み：trim を必ず適用 ===
         for (let i = 1; i < rows.length; i++) {
           const v = rows[i][visitCol]?.trim();
           const m = rows[i][meetCol]?.trim();
+
+          if (!v && !m) continue;
+
           total++;
           if (v === "一回目") firstCount++;
           if (m === "会えた") meetCount++;
         }
 
-        if (total > 0 && firstCount === total) return { color: "yellow" };
-        if (meetCount / total >= 0.5) return { color: "red" };
-
-        return { color: "lime" };
-      } catch {
-        return { color: "lime" };
-      }
-    }
-
-    /* -------------------------------------------
-       マーカー追加（動的カラー＋黄緑デフォルト）
-       ------------------------------------------- */
-    async function addApartmentMarkers() {
-      for (const apt of apartments) {
-        const status = await fetchVisitStatus(apt);
-
-        let fillColor = "#7ED957"; // デフォルト黄緑
-        if (status.color === "yellow") fillColor = "#FBC02D";
-        if (status.color === "red") fillColor = "#E53935";
-
-        const pathData =
-        "M1662.11,944.38c0-306.13-248.18-554.32-554.32-554.32-29.74,0-58.89,2.36-87.35,6.92-264.64,41.86-466.93,271.01-466.93,547.4,0,85.15,19.19,165.84,53.57,237.93,15.53,32.7,34.27,63.56,55.63,92.33h-.11l445.23,590.94,441.56-586.19h-.07c70.74-93.08,112.79-209.13,112.79-335.02ZM1107.8,1193.08c-99.14,0-184.7-57.99-224.65-141.94-15.45-32.36-24.06-68.57-24.06-106.77,0-124.05,90.76-226.86,209.54-245.64,12.76-2.06,25.85-3.11,39.17-3.11,137.37,0,248.75,111.37,248.75,248.75s-111.37,248.71-248.75,248.71Z";
-
-        const icon = {
-          path: pathData,
-          fillColor: fillColor,
-          fillOpacity: 0.95,
-          strokeColor: "white",
-          strokeWeight: 2,
-          scale: 0.05,
-          anchor: new google.maps.Point(831, 1193)
-        };
-
-        const marker = new google.maps.Marker({
-          position: apt.position,
-          map: map,
-          title: apt.name,
-          icon: icon
-        });
-
-        if (apt.sheetUrl) {
-          marker.addListener("click", () => window.open(apt.sheetUrl, "_blank"));
+        /* ***********************************
+           🟡 正しい優先順位で色を決定
+           1) 全部一回目 → 黄色
+           2) 会えた50%以上 → 赤
+           3) それ以外 → 黄緑
+        *********************************** */
+        let color;
+        if (total > 0 && firstCount === total) {
+          color = "yellow";
+        } else if (total > 0 && meetCount / total >= 0.5) {
+          color = "red";
+        } else {
+          color = "limegreen";
         }
+
+        placeMarker(apt, color);
+
+      } catch (e) {
+        console.error("シート取得失敗:", apt.name, e);
+        placeMarker(apt, "gray");
       }
     }
 
-    /* -------------------------------------------
-       Google Map 初期化
-       ------------------------------------------- */
-    let map, userMarker, shadowMarker;
-
-    function initMap() {
-      map = new google.maps.Map(document.getElementById("map"), {
-        center: apartments[0].position,
-        zoom: 16
+    /* ==========================================
+       マーカー作成
+       ========================================== */
+    function placeMarker(apt, color) {
+      new google.maps.Marker({
+        position: apt.position,
+        map,
+        title: apt.name,
+        icon: createMarkerIcon(color),
       });
-
-      addApartmentMarkers();  // マンションマーカー表示
     }
 
-    /* -------------------------------------------
-       ① 現在地ボタン → クリック時に位置取得
-       ------------------------------------------- */
-    document.getElementById("getLocationBtn").onclick = () => {
+    /* ==========================================
+       現在地を取得してマーカー表示
+       ========================================== */
+    function getLocation() {
       if (!navigator.geolocation) {
-        alert("このブラウザは現在地取得に対応していません。");
+        alert("このブラウザでは現在地取得がサポートされていません。");
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(pos => {
-        const userPos = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude
-        };
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
 
-        map.setCenter(userPos);
+          const userPos = { lat, lng };
 
-        // 影マーカー
-        shadowMarker = new google.maps.Marker({
-          position: userPos,
-          map: map,
-          zIndex: 1,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 28,
-            fillColor: "black",
-            fillOpacity: 0.25,
-            strokeWeight: 0
+          // 現在地マーカーがすでにある場合 → 移動
+          if (userMarker) {
+            userMarker.setPosition(userPos);
+          } else {
+            // 新規作成
+            userMarker = new google.maps.Marker({
+              position: userPos,
+              map,
+              title: "現在地",
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 14,
+                fillColor: "#4285F4",
+                fillOpacity: 1,
+                strokeColor: "white",
+                strokeWeight: 3,
+              },
+            });
+
+            // ゆっくり鼓動するアニメーション
+            animateUserMarker();
           }
-        });
 
-        // 本体マーカー
-        userMarker = new google.maps.Marker({
-          position: userPos,
-          map: map,
-          zIndex: 2,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 20,
-            fillColor: "#4285F4",
-            fillOpacity: 1,
-            strokeWeight: 3,
-            strokeColor: "white"
-          }
-        });
-
-        /* ③ ゆっくり自然なアニメーション */
-        let grow = true;
-        let size = 20;
-
-        setInterval(() => {
-          size += grow ? 0.08 : -0.08;
-
-          if (size >= 23) grow = false;
-          if (size <= 20) grow = true;
-
-          userMarker.setIcon({
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: size,
-            fillColor: "#4285F4",
-            fillOpacity: 1,
-            strokeWeight: 3,
-            strokeColor: "white"
-          });
-
-        }, 70);
-      },
-      err => alert("現在地を取得できませんでした。権限をご確認ください。")
+          map.panTo(userPos);
+        },
+        (err) => {
+          alert("現在地を取得できませんでした：" + err.message);
+        }
       );
-    };
+    }
+
+    /* ==========================================
+       現在地マーカーをゆっくり鼓動させる
+       ========================================== */
+    function animateUserMarker() {
+      if (!userMarker) return;
+
+      let growing = true;
+      let scale = 14;
+
+      setInterval(() => {
+        if (!userMarker) return;
+
+        if (growing) {
+          scale += 0.25;
+          if (scale >= 18) growing = false;
+        } else {
+          scale -= 0.25;
+          if (scale <= 14) growing = true;
+        }
+
+        userMarker.setIcon({
+          path: google.maps.SymbolPath.CIRCLE,
+          scale,
+          fillColor: "#4285F4",
+          fillOpacity: 1,
+          strokeColor: "white",
+          strokeWeight: 3,
+        });
+      }, 80); // ← ゆっくりリズムに調整
+    }
 
   </script>
 </body>
 </html>
-
