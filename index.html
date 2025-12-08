@@ -191,8 +191,8 @@
         let meetCount = 0;
 
         for (let i = 1; i < rows.length; i++) {
-          const v = rows[i][visitCol];
-          const m = rows[i][meetCol];
+          const v = rows[i][visitCol]?.trim();
+          const m = rows[i][meetCol]?.trim();
           total++;
           if (v === "一回目") firstCount++;
           if (m === "会えた") meetCount++;
@@ -332,3 +332,4 @@
   </script>
 </body>
 </html>
+
