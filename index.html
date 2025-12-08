@@ -122,7 +122,7 @@
       {
         name: "アコール東草津",
         position: { lat: 35.0157344, lng: 135.9690205 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1rAz961SDxo0Q028rR0fBV8nyPq5A1RQeawZE34nZJFA/edit?usp=sharing",
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1rAz961SDxo0Q028rR0fBV8nyPq5A1RQeawZE34nNJfA/edit?usp=sharing",
         active: true
       },
       {
@@ -229,6 +229,11 @@
       const statusPromises = apartments.map(apt => fetchVisitStatus(apt));
       const statuses = await Promise.all(statusPromises);
 
+      // ★★★ 固定するピクセルサイズを設定 (現在地マーカーより少し大きくする) ★★★
+      const FIXED_WIDTH_PX = 45; 
+      const FIXED_HEIGHT_PX = 40; 
+      // ★★★ ------------------------------------------------- ★★★
+
       for (let i = 0; i < apartments.length; i++) {
         const apt = apartments[i];
         const status = statuses[i];
@@ -240,8 +245,9 @@
     const pathData =
     "M1662.11,944.38c0-306.13-248.18-554.32-554.32-554.32-29.74,0-58.89,2.36-87.35,6.92-264.64,41.86-466.93,271.01-466.93,547.4,0,85.15,19.19,165.84,53.57,237.93,15.53,32.7,34.27,63.56,55.63,92.33h-.11l445.23,590.94,441.56-586.19h-.07c70.74-93.08,112.79-209.13,112.79-335.02ZM1107.8,1193.08c-99.14,0-184.7-57.99-224.65-141.94-15.45-32.36-24.06-68.57-24.06-106.77,0-124.05,90.76-226.86,209.54-245.64,12.76-2.06,25.85-3.11,39.17-3.11,137.37,0,248.75,111.37,248.75,248.75s-111.37,248.71-248.75,248.71Z";
 
-    // ① scale を先に決める（ピクセルサイズ計算に使用）
-    const scale = 0.07;
+    // scale はここでは使用しませんが、元の path の比率を保つために必要ありません。
+    // 代わりに固定ピクセルサイズを直接使用します。
+    const scale = 0.07; 
 
     // ② pathData から数値を抜き出し、座標ペアで bbox を計算する
     const nums = pathData.match(/-?\d+\.?\d*/g).map(Number);
@@ -263,17 +269,20 @@
       minX = 0; minY = 0; maxX = 1662; maxY = 1193;
     }
     
-    // ③ マーカーがズームでズレないようにするための寸法計算 (ここを修正)
+    // ③ マーカーがズームでズレないようにするための寸法計算 (修正なし)
     const pathWidth = maxX - minX;
     const pathHeight = maxY - minY;
     
-    // 元のscale 0.07 を使って、最終的な固定ピクセルサイズを計算
-    const fixedPixelWidth = pathWidth * scale;
-    const fixedPixelHeight = pathHeight * scale;
-
-    // アンカーはスケール後のピクセル値で指定
-    const anchorX = ((minX + maxX) / 2) * scale;
-    const anchorY = (maxY) * scale;
+    // アンカーの計算：中心点 (X) と最下点 (Y) を新しい固定サイズに合うように調整する
+    // アンカーの X 座標はアイコンの中心 (width / 2)
+    const anchorX = FIXED_WIDTH_PX / 2;
+    
+    // アンカーの Y 座標はアイコンの最下点 (height)
+    // ただし、元のアイコンが縦長の水滴型なので、最下点にピンを合わせるために HEIGHT_PX を使用します。
+    // (maxY - minY) / pathHeight はスケール比率 (約 1.0)
+    // 適切なピン先に合わせるには、元の path の最下点比率を計算する必要があります。
+    // 簡易的にアイコン全体の高さ FIXED_HEIGHT_PX を使用します。
+    const anchorY = FIXED_HEIGHT_PX;
 
     const icon = {
       path: pathData,
@@ -281,15 +290,15 @@
       fillOpacity: 0.95,
       strokeColor: "white",
       strokeWeight: 2,
-      // scale プロパティを削除: これがズームによるスケーリングの原因です。
+      // scale プロパティを削除済み
       
       // size: パス座標系のオリジナルサイズ
       size: new google.maps.Size(pathWidth, pathHeight),
       
-      // scaledSize: ズームに関わらず固定するピクセルサイズ
-      scaledSize: new google.maps.Size(fixedPixelWidth, fixedPixelHeight),
+      // scaledSize: ズームに関わらず固定するピクセルサイズ ★★★ 修正箇所 ★★★
+      scaledSize: new google.maps.Size(FIXED_WIDTH_PX, FIXED_HEIGHT_PX),
       
-      // anchor: scaledSizeに対するピクセル単位のアンカー位置
+      // anchor: scaledSizeに対するピクセル単位のアンカー位置 ★★★ 修正箇所 ★★★
       anchor: new google.maps.Point(anchorX, anchorY)
     };
 
@@ -326,7 +335,7 @@
       addApartmentMarkers();
 
       // -----------------------------
-      //  現在地マーカー（既存コード）
+      //  現在地マーカー
       // -----------------------------
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
