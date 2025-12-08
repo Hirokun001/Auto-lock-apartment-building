@@ -128,7 +128,8 @@
       {
         name: "Casa raffine草津",
         position: { lat: 35.0151292, lng: 135.9645046 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1WGYDKJQj28mxtCNOBP3MVInTkD0yVOvfirfHZkh6ZHk/edit?usp=sharing",
+        // ★★★ 修正箇所 ★★★
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1WGYDKJQj28mxtCNOBP3MVInTkD0yVOvfirfHZkh6ZHk/edit?gid=1854135294&usp=sharing",
         active: true
       }
     ];
@@ -143,8 +144,9 @@
         const sheetId = m[1];
 
         // gid を取得
+        // sheetUrlにgidが含まれる場合、それを優先的に取得
         const gidMatch = sheetUrl.match(/gid=([0-9]+)/);
-        const gid = gidMatch ? gidMatch[1] : 0;
+        const gid = gidMatch ? gidMatch[1] : 0; // gidがなければデフォルトの0
 
         return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
       }
