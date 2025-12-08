@@ -169,13 +169,15 @@
             const text = await res.text();
 
             const rows = text.replace(/\r/g, "").trim().split("\n").map(r => r.split(","));
-            const header = rows[0];
+            // const header = rows[0]; // ヘッダーは使用しないため不要
 
-            const visitCol = header.indexOf("訪問状況");
             // A列（インデックス0）を部屋番号の識別子として使用
             const roomIdentifierCol = 0; 
+            
+            // ★★★ 修正: B列（インデックス1）を直接訪問状況の列として固定 ★★★
+            const visitCol = 1; 
 
-            if (visitCol === -1) return { color: "default" };
+            // if (visitCol === -1) return { color: "default" }; // ヘッダー検索を行わないため削除
 
             let totalRooms = 0; // 分母: 部屋の総数 (A列orB列に値がある行)
             let enteredCount = 0; // 分子: B列に何らかの値が入力されているセルの数
@@ -186,17 +188,15 @@
               
               // A列（部屋番号を想定）の値を取得
               const roomIdentifier = row[roomIdentifierCol]?.trim().replace(/^"|"$/g, "");
-              // B列（訪問状況）の値を取得
+              // B列（訪問状況）の値を取得 (インデックス 1 を使用)
               const visit = row[visitCol]?.trim().replace(/^"|"$/g, "");
               
-              // ★★★ 寛容なリスト終了ロジック ★★★
-              // A列とB列の両方が空欄の場合にのみ、リストの終了と見なす。
+              // 寛容なリスト終了ロジック: A列とB列の両方が空欄の場合にのみ、リストの終了と見なす。
               if (!roomIdentifier && !visit) {
                 break; 
               }
 
               // A列かB列のどちらかに値が入っていれば、それは有効な部屋（分母）
-              // ※ breakしなかった行は、必ずどちらかに値が入っているため、無条件でインクリメントします。
               totalRooms++; 
 
               // B列に何らかの値が入力されていれば、入力済みとしてカウント（分子）
