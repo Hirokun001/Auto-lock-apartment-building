@@ -167,7 +167,7 @@
             const header = rows[0];
 
             const visitCol = header.indexOf("訪問状況");
-            // ★ 修正点: A列（インデックス0）を部屋番号の識別子として、部屋の総数を数えるための列とします。
+            // A列（インデックス0）を部屋番号の識別子として、部屋の総数を数えるための列とします。
             const roomIdentifierCol = 0; 
 
             if (visitCol === -1) return { color: "default" };
@@ -182,18 +182,18 @@
               // A列（部屋番号を想定）の値を取得し、部屋の存在を判定
               const roomIdentifier = row[roomIdentifierCol]?.trim().replace(/^"|"$/g, "");
               
-              // ★ A列が空欄の場合、そこで部屋リストが終了したとみなし、処理を中断（break）します。
+              // ★ A列が空欄の場合、リスト終了
               if (!roomIdentifier) {
                 break; 
               }
-              
-              // A列に値があれば、その行は有効な部屋なので総数としてカウント（分母）
+
+              // A列に値があれば、その行は有効な部屋（分母）
               totalRooms++; 
 
               // B列（訪問状況）の値を取得
               const visit = row[visitCol]?.trim().replace(/^"|"$/g, "");
               
-              // B列に何らかの値が入力されていれば、入力済みとしてカウント（分子）
+              // ★ B列に何らかの値が入力されていれば、入力済みとしてカウント（分子）
               if (visit) {
                 enteredCount++;
               }
