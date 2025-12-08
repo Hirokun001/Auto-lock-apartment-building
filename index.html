@@ -21,7 +21,7 @@
         name: "プレサンスロジェ草津シエル",
         position: { lat: 35.02332033360808, lng: 135.96861511597268 },
         sheetUrl: null,
-        active: false // ★この設定がグレー・クリック不可の条件となります
+        active: false // ★ active: falseのマンションがグレー・クリック不可になります
       },
       {
         name: "シルクトレーテA棟",
@@ -237,7 +237,7 @@
         let fillColor;
         let isClickable = true;
 
-        // ★修正ポイント：active: falseの場合はグレーに固定
+        // active: falseの場合はグレーに固定し、クリック不可にする
         if (apt.active === false) {
             fillColor = "#808080"; // グレーに設定
             isClickable = false;    // クリック不可
@@ -257,9 +257,9 @@
           fillOpacity: 0.95,
           strokeColor: "white",
           strokeWeight: 2,
-          // サイズとアンカーは index-02.html の設定を維持
           scale: 0.07, 
-          anchor: new google.maps.Point(831, 1193)
+          // ★修正ポイント：アンカー位置をアイコンのピンの先端（中心下の座標）に合わせる (X: 831, Y: 1535)
+          anchor: new google.maps.Point(831, 1535) 
         };
 
         const marker = new google.maps.Marker({
