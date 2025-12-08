@@ -1,18 +1,4 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>オートロックマンション 地図＋スプレッドシート</title>
-  <style>
-    body, html { margin:0; padding:0; height:100%; }
-    #map { width:100%; height:100%; }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBaxgKJTUw1-0gl1pks-ATIc6iw1HITZyg&callback=initMap" async defer></script>
-
-  <script>
+<script>
     /* -------------------------------------------
        マンションデータ
        ------------------------------------------- */
@@ -21,7 +7,7 @@
         name: "プレサンスロジェ草津シエル",
         position: { lat: 35.02332033360808, lng: 135.96861511597268 },
         sheetUrl: null,
-        active: false // ★ active: falseのマンションがグレー・クリック不可になります
+        active: false // ★ active: falseのマンションがグレー・クリック不可の条件
       },
       {
         name: "シルクトレーテA棟",
@@ -171,7 +157,7 @@
 
             if (visitCol === -1) return { color: "default" };
 
-            let total = 0;
+            let total = 0; // ★ B列に入力がある行の総数（プルダウンの数）
 
             // 黄色判定用
             const okValues = ["一回目", "外国人", "訪問拒否"];
@@ -180,16 +166,19 @@
             // 赤色判定用
             let meetCount = 0;
 
-            // 修正後のループ開始 (B2, B3をスキップするため i=3 から開始)
+            // B4 (i=3) から最後までチェック
             for (let i = 3; i < rows.length; i++) {
               const row = rows[i];
 
               const visit = row[visitCol]?.trim().replace(/^"|"$/g, "");
               const meet = row[meetCol]?.trim().replace(/^"|"$/g, "");
 
-              if (!visit) continue;
+              // ★ 修正: B列（訪問状況）が空欄の場合、そこで部屋リストが終了したとみなし、処理を中断します
+              if (!visit) {
+                break; 
+              }
 
-              total++;
+              total++; // B列に値が入力された行（プルダウン）のみをカウント
 
               // 黄色判定
               if (!okValues.includes(visit)) {
@@ -204,7 +193,7 @@
 
             if (total === 0) return { color: "default" };
 
-            // ① 黄色
+            // ① 黄色: total（入力されたプルダウン数）の100%がokValuesに含まれる場合
             if (allMatched) {
               return { color: "yellow" };
             }
@@ -259,7 +248,7 @@
           strokeColor: "white",
           strokeWeight: 2,
           scale: 0.07, 
-          // ★修正ポイント：アンカー位置をアイコンのピンの先端（中心下の座標）に合わせる (X: 831, Y: 1535)
+          // アンカー位置をアイコンのピンの先端（中心下の座標）に合わせる
           anchor: new google.maps.Point(831, 1535) 
         };
 
@@ -372,6 +361,3 @@
       }
     }
   </script>
-
-</body>
-</html>
