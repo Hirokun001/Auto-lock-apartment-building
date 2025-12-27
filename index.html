@@ -13,27 +13,19 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBaxgKJTUw1-0gl1pks-ATIc6iw1HITZyg&callback=initMap" async defer></script>
 
 <script>
-    /* ===============================
-      共通設定
-    ================================ */
     const DEFAULT_GID = "1854135294";
     let map;
-    let apartmentMarkerObjects = []; // 変数名を統一
+    let apartmentMarkerObjects = [];
+    let userMarker = null;
+    let shadowMarker = null;
 
-    /* ===============================
-      画面サイズに応じたアイコンサイズ
-    ================================ */
     function getMarkerScale() {
       const w = window.innerWidth;
-      // マンションピンのスケール, 現在地サークルのスケール
-      if (w <= 600) return { apt: 0.07, user: 18 };    // スマホ
-      if (w <= 1024) return { apt: 0.055, user: 14 };  // タブレット
-      return { apt: 0.045, user: 12 };                 // PC
+      if (w <= 600) return { apt: 0.07, user: 18 };
+      if (w <= 1024) return { apt: 0.055, user: 14 };
+      return { apt: 0.045, user: 12 };
     }
 
-    /* -------------------------------------------
-       マンションデータ
-       ------------------------------------------- */
     const apartments = [
       { name: "プレサンスロジェ草津シエル", position: { lat: 35.02332033360808, lng: 135.96861511597268 }, sheetUrl: null, active: false },
       { name: "シルクトレーテA棟", position: { lat: 35.0073924, lng: 135.9740855 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1NPxVpgBONxBvbza5W7wbYnQGInP1dRr-c3fKYpAnGe0/edit?usp=sharing", active: true },
@@ -56,9 +48,6 @@
       { name: "Casa raffine草津", position: { lat: 35.0151292, lng: 135.9645046 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1WGYDKJQj28mxtCNOBP3MVInTkD0yVOvfirfHZkh6ZHk/edit?usp=sharing", active: true }
     ];
 
-    /* -------------------------------------------
-        Google シート CSV 化
-    ------------------------------------------- */
     function convertSheetToCsvUrl(sheetUrl) {
       const m = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
       if (!m) return null;
@@ -68,9 +57,6 @@
       return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
     }
 
-    /* -------------------------------------------
-        スプレッドシートから訪問状況を取得
-    ------------------------------------------- */
     async function fetchVisitStatus(apt) {
       if (!apt.active || !apt.sheetUrl) return { color: "default" };
       const csvUrl = convertSheetToCsvUrl(apt.sheetUrl);
@@ -102,25 +88,16 @@
       }
     }
 
-    /* -------------------------------------------
-        マーカー追加（動的アイコンカラー）
-    ------------------------------------------- */
     async function addApartmentMarkers() {
       const statusPromises = apartments.map(apt => fetchVisitStatus(apt));
       const statuses = await Promise.all(statusPromises);
-      const currentScales = getMarkerScale(); // 現在のスケールを取得
+      const currentScales = getMarkerScale();
 
       for (let i = 0; i < apartments.length; i++) {
         const apt = apartments[i];
         const status = statuses[i];
-        let fillColor;
-        let isClickable = true;
-
-        if (apt.active === false) {
-            fillColor = "#808080";
-            isClickable = false;
-        } else {
-            fillColor = "#00A0A0";
+        let fillColor = (apt.active === false) ? "#808080" : "#00A0A0";
+        if (apt.active !== false) {
             if (status.color === "yellow") fillColor = "#FBC02D";
             if (status.color === "red") fillColor = "#E53935";
         }
@@ -137,26 +114,17 @@
             fillOpacity: 0.95,
             strokeColor: "white",
             strokeWeight: 2,
-            scale: currentScales.apt, // 動的スケール
+            scale: currentScales.apt,
             anchor: new google.maps.Point(831, 1535) 
-          },
-          cursor: isClickable ? 'pointer' : 'default' 
+          }
         });
 
-        if (isClickable && apt.sheetUrl) {
-          marker.addListener("click", () => {
-            window.open(apt.sheetUrl, "_blank");
-          });
+        if (apt.active !== false && apt.sheetUrl) {
+          marker.addListener("click", () => { window.open(apt.sheetUrl, "_blank"); });
         }
-        apartmentMarkerObjects.push(marker); // 保存
+        apartmentMarkerObjects.push(marker);
       }
     }
-
-    /* -------------------------------------------
-        Google Map 初期化
-    ------------------------------------------- */
-    let userMarker = null;
-    let shadowMarker = null;
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
@@ -178,8 +146,8 @@
               zIndex: 1,
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: currentScales.user * 1.33, 
-                fillColor: "black", fillOpacity: 0.3, strokeWeight: 0
+                scale: currentScales.user * 1.4, 
+                fillColor: "black", fillOpacity: 0.2, strokeWeight: 0
               }
             });
 
@@ -195,14 +163,15 @@
               }
             });
 
-            // アニメーション
+            // アニメーション (中心がずれないよう設定を維持)
             let growing = true;
             setInterval(() => {
+              if (!userMarker) return;
               const baseScale = getMarkerScale().user;
               let currentScale = userMarker.getIcon().scale;
               if (growing) {
                 currentScale += 0.2;
-                if (currentScale >= baseScale * 1.2) growing = false; 
+                if (currentScale >= baseScale * 1.25) growing = false; 
               } else {
                 currentScale -= 0.2;
                 if (currentScale <= baseScale) growing = true; 
@@ -217,7 +186,6 @@
         );
       }
 
-      // ウィンドウリサイズ時にマーカーサイズを更新
       window.addEventListener('resize', () => {
         const scales = getMarkerScale();
         apartmentMarkerObjects.forEach(m => {
@@ -229,6 +197,11 @@
           const icon = userMarker.getIcon();
           icon.scale = scales.user;
           userMarker.setIcon(icon);
+        }
+        if (shadowMarker) {
+          const icon = shadowMarker.getIcon();
+          icon.scale = scales.user * 1.4;
+          shadowMarker.setIcon(icon);
         }
       });
     }
