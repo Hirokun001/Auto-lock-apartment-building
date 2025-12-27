@@ -11,291 +11,46 @@
 <body>
   <div id="map"></div>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBaxgKJTUw1-0gl1pks-ATIc6iw1HITZyg&callback=initMap" async defer></script>
-
-<script>
-    // ★★★ 共通で利用するシートID (gid) を定義します ★★★
-    const DEFAULT_GID = "1854135294"; 
-
-    /* -------------------------------------------
-       マンションデータ
-       ------------------------------------------- */
+  <script>
     const apartments = [
-      {
-        name: "プレサンスロジェ草津シエル",
-        position: { lat: 35.02332033360808, lng: 135.96861511597268 },
-        sheetUrl: null,
-        active: false // ★ active: falseのマンションがグレー・クリック不可の条件
-      },
-      {
-        name: "シルクトレーテA棟",
-        position: { lat: 35.0073924, lng: 135.9740855 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1NPxVpgBONxBvbza5W7wbYnQGInP1dRr-c3fKYpAnGe0/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "シルクトレーテB棟",
-        position: { lat: 35.0075715, lng: 135.974253 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1o772GZpl8Uu8GsAIyXoScJszCJFQN5Hc18ifRReWmkg/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "ガーデンハイツヤマキ",
-        position: { lat: 35.0042782, lng: 135.9707617 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1cIv7xgrO0vkcXxxGeviPxx05NkKw_EhfEkCOwQ3uhlA/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "クランボナール",
-        position: { lat: 35.0040314, lng: 135.9714115 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1_XvlOmBBMgIrarYD_quGHwGsGswHq9bNF71mX8MCm-Ec/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "アルタ青地ビュー",
-        position: { lat: 35.0083318, lng: 135.9750119 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1rdzT_NRjPwPjWQynSrSdYqGSgANFE4qQpfyBHL2Bo_M/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "EL ORIENTE2",
-        position: { lat: 35.0135221, lng: 135.9716834 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1b7Tml1T_bFOVJlxdKGRrZE8kJKPFej1N_rSfpcd6kK4/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "Baum Dorf",
-        position: { lat: 35.0061945, lng: 135.9606194 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1qVp3wMr0_plAG91-EpANvB-9UNTOww-WhmRZBwOTF8E/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "デン・エデン",
-        position: { lat: 35.0069946, lng: 135.9663906 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1zQJhR_R02iHvyNBdOLRvBEornEvOivDVYNV35SY2QBU/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "ミニオン一期一会",
-        position: { lat: 34.9911528, lng: 135.9644665 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/12ZU7wTm7n8IS4WIZwH7G4U9mBJnPlh59QOJlJ96vCgM/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "パルト・プロムナードⅠ",
-        position: { lat: 35.0099677, lng: 135.9655099 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1Z0DdHhCUaoCQRBgKckEN8bohvAyx5Zfg_6Awqn8y3_s/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "パルト・プロムナードⅡ",
-        position: { lat: 35.0100723, lng: 135.9654017 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1-FAask5Li3iYGb1UUjKhDvCf4UKUAX3vxtxLV73yFIs/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "EL ORIENTE",
-        position: { lat: 35.0137968, lng: 135.9714161 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1Pv1OciAaztZCIBkIyCxO46pHIErr5dWZJnRgCB00NcI/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "コスモ草津(夜)",
-        position: { lat: 35.0173991, lng: 135.9598398 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1o4RwGf_t96GtdFDp7jNkVDMSFr22Vhz3-ScqZ9wOoDc/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "草津パークホームズ",
-        position: { lat: 35.0122945, lng: 135.9559939 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1ThqZh2LcPcwXBIP630vr3b_ZCR26-npxVy_-347ORRY/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "ココスモ草津Ⅱ (夜)",
-        position: { lat: 35.0176379, lng: 135.9587089 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1M8uhi42_NvaVrYCA59XLDuCrLYcn5t8XlrLv-g8-dEI/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "リベルテ草津",
-        position: { lat: 35.018516, lng: 135.9591753 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1bVCC-vuvmNAqsKfs3mvRXWGhKCE7XHeAFeJ_nwWRzWA/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "アコール東草津",
-        position: { lat: 35.0157344, lng: 135.9690205 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1rAz961SDxo0Q028rR0fBV8nyPq5A1RQeawZE34nZJFA/edit?usp=sharing",
-        active: true
-      },
-      {
-        name: "Casa raffine草津",
-        position: { lat: 35.0151292, lng: 135.9645046 },
-        sheetUrl: "https://docs.google.com/spreadsheets/d/1WGYDKJQj28mxtCNOBP3MVInTkD0yVOvfirfHZkh6ZHk/edit?usp=sharing", 
-        active: true
-      }
+      // ...（データ部分は変更なしのため中略）...
+      { name: "プレサンスロジェ草津シエル", position: { lat: 35.02332033360808, lng: 135.96861511597268 }, sheetUrl: null, active: false },
+      { name: "シルクトレーテA棟", position: { lat: 35.0073924, lng: 135.9740855 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1NPxVpgBONxBvbza5W7wbYnQGInP1dRr-c3fKYpAnGe0/edit?usp=sharing", active: true },
+      { name: "シルクトレーテB棟", position: { lat: 35.0075715, lng: 135.974253 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1o772GZpl8Uu8GsAIyXoScJszCJFQN5Hc18ifRReWmkg/edit?usp=sharing", active: true },
+      { name: "ガーデンハイツヤマキ", position: { lat: 35.0042782, lng: 135.9707617 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1cIv7xgrO0vkcXxxGeviPxx05NkKw_EhfEkCOwQ3uhlA/edit?usp=sharing", active: true },
+      { name: "クランボナール", position: { lat: 35.0040314, lng: 135.9714115 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1_XvlOmBBMgIrarYD_quGHwGsWwHq9bNF71mX8MCm-Ec/edit?usp=sharing", active: true },
+      { name: "アルタ青地ビュー", position: { lat: 35.0083318, lng: 135.9750119 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1rdzT_NRjPwPjWQynSrSdYqGSgANFE4qQpfyBHL2Bo_M/edit?usp=sharing", active: true },
+      { name: "EL ORIENTE2", position: { lat: 35.0135221, lng: 135.9716834 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1b7Tml1T_bFOVJlxdKGRrZE8kJKPFej1N_rSfpcd6kK4/edit?usp=sharing", active: true },
+      { name: "Baum Dorf", position: { lat: 35.0061945, lng: 135.9606194 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1qVp3wMr0_plAG91-EpANvB-9UNTOww-WhmRZBwOTF8E/edit?usp=sharing", active: true },
+      { name: "デン・エデン", position: { lat: 35.0069946, lng: 135.9663906 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1zQJhR_R02iHvyNBdOLRvBEornEvOivDVYNV35SY2QBU/edit?usp=sharing", active: true },
+      { name: "ミニオン一期一会", position: { lat: 34.9911528, lng: 135.9644665 }, sheetUrl: "https://docs.google.com/spreadsheets/d/12ZU7wTm7n8IS4WIZwH7G4U9mBJnPlh59QOJlJ96vCgM/edit?usp=sharing", active: true },
+      { name: "パルト・プロムナードⅠ", position: { lat: 35.0099677, lng: 135.9655099 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1Z0DdHhCUaoCQRBgKckEN8bohvAyx5Zfg_6Awqn8y3_s/edit?usp=sharing", active: true },
+      { name: "パルト・プロムナードⅡ", position: { lat: 35.0100723, lng: 135.9654017 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1-FAask5Li3iYGb1UUjKhDvCf4UKUAX3vxtxLV73yFIs/edit?usp=sharing", active: true },
+      { name: "EL ORIENTE", position: { lat: 35.0137968, lng: 135.9714161 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1Pv1OciAaztZCIBkIyCxO46pHIErr5dWZJnRgCB00NcI/edit?usp=sharing", active: true },
+      { name: "コスモ草津(夜)", position: { lat: 35.0173991, lng: 135.9598398 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1o4RwGf_t96GtdFDp7jNkVDMSFr22Vhz3-ScqZ9wOoDc/edit?usp=sharing", active: true },
+      { name: "草津パークホームズ", position: { lat: 35.0122945, lng: 135.9559939 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1ThqZh2LcPcwXBIP630vr3b_ZCR26-npxVy_-347ORRY/edit?usp=sharing", active: true },
+      { name: "ココスモ草津Ⅱ (夜) ", position: { lat: 35.0176379, lng: 135.9587089 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1M8uhi42_NvaVrYCA59XLDuCrLYcn5t8XlrLv-g8-dEI/edit?usp=sharing", active: true },
+      { name: "リベルテ草津", position: { lat: 35.018516, lng: 135.9591753 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1bVCC-vuvmNAqsKfs3mvRXWGhKCE7XHeAFeJ_nwWRzWA/edit?usp=sharing", active: true },
+      { name: "アコール東草津", position: { lat: 35.0157344, lng: 135.9690205 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1rAz961SDxo0Q028rR0fBV8nyPq5A1RQeawZE34nZJFA/edit?usp=sharing", active: true },
+      { name: "Casa raffine草津", position: { lat: 35.0151292, lng: 135.9645046 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1WGYDKJQj28mxtCNOBP3MVInTkD0yVOvfirfHZkh6ZHk/edit?usp=sharing", active: true }
     ];
 
-
-    /* -------------------------------------------
-       Google シート CSV 化
-       ------------------------------------------- */
-      function convertSheetToCsvUrl(sheetUrl) {
-        const m = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-        if (!m) return null;
-        const sheetId = m[1];
-
-        // gid を取得
-        const gidMatch = sheetUrl.match(/gid=([0-9]+)/);
-        
-        // URLにgidが含まれていない場合は、DEFAULT_GIDを使用
-        const gid = gidMatch ? gidMatch[1] : DEFAULT_GID; 
-
-        return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
-      }
-
-    /* -------------------------------------------
-       スプレッドシートから訪問状況を取得
-       ------------------------------------------- */
-        async function fetchVisitStatus(apt) {
-          // active: false の場合はシートの確認をスキップし、デフォルトを返す
-          if (!apt.active || !apt.sheetUrl) return { color: "default" };
-
-          const csvUrl = convertSheetToCsvUrl(apt.sheetUrl);
-          if (!csvUrl) return { color: "default" };
-
-          try {
-            const res = await fetch(csvUrl);
-            const text = await res.text();
-
-            const rows = text.replace(/\r/g, "").trim().split("\n").map(r => r.split(","));
-            // const header = rows[0]; // ヘッダーは使用しないため不要
-
-            // A列（インデックス0）を部屋番号の識別子として使用
-            const roomIdentifierCol = 0; 
-            
-            // ★★★ 修正: B列（インデックス1）を直接訪問状況の列として固定 ★★★
-            const visitCol = 1; 
-
-            // if (visitCol === -1) return { color: "default" }; // ヘッダー検索を行わないため削除
-
-            let totalRooms = 0; // 分母: 部屋の総数 (A列orB列に値がある行)
-            let enteredCount = 0; // 分子: B列に何らかの値が入力されているセルの数
-
-            // B4 (i=3) からCSVデータの最後までをチェック
-            for (let i = 3; i < rows.length; i++) {
-              const row = rows[i];
-              
-              // A列（部屋番号を想定）の値を取得
-              const roomIdentifier = row[roomIdentifierCol]?.trim().replace(/^"|"$/g, "");
-              // B列（訪問状況）の値を取得 (インデックス 1 を使用)
-              const visit = row[visitCol]?.trim().replace(/^"|"$/g, "");
-              
-              // 寛容なリスト終了ロジック: A列とB列の両方が空欄の場合にのみ、リストの終了と見なす。
-              if (!roomIdentifier && !visit) {
-                break; 
-              }
-
-              // A列かB列のどちらかに値が入っていれば、それは有効な部屋（分母）
-              totalRooms++; 
-
-              // B列に何らかの値が入力されていれば、入力済みとしてカウント（分子）
-              if (visit) {
-                enteredCount++;
-              }
-            } 
-
-            if (totalRooms === 0) return { color: "default" };
-
-            // 入力済みの割合を計算
-            const ratio = enteredCount / totalRooms;
-
-            // 判定ロジック
-            // ① 赤色: 100%（すべて入力済み）
-            if (ratio >= 1.0) {
-              return { color: "red" };
-            }
-            
-            // ② 黄色: 50%以上（50%以上入力済み）
-            if (ratio >= 0.5) {
-              return { color: "yellow" };
-            }
-            
-            // ③ デフォルト（50%未満）
-            return { color: "default" };
-
-          } catch (e) {
-            console.error("Fetch error:", e);
-            return { color: "default" };
-          }
-        }
-
-    /* -------------------------------------------
-       マーカー追加（動的アイコンカラー）
-       ------------------------------------------- */
-    async function addApartmentMarkers() {
-      // 全てのアパートメントのステータス取得を並行して実行 (パフォーマンス向上)
-      const statusPromises = apartments.map(apt => fetchVisitStatus(apt));
-      const statuses = await Promise.all(statusPromises);
-
-      for (let i = 0; i < apartments.length; i++) {
-        const apt = apartments[i];
-        const status = statuses[i];
-
-        let fillColor;
-        let isClickable = true;
-
-        // active: falseの場合はグレーに固定し、クリック不可にする
-        if (apt.active === false) {
-            fillColor = "#808080"; // グレーに設定
-            isClickable = false;    // クリック不可
-        } else {
-            // active: true の場合のカラーリングロジック
-            fillColor = "#00A0A0";
-            if (status.color === "yellow") fillColor = "#FBC02D";
-            if (status.color === "red") fillColor = "#E53935";
-        }
-
-        const pathData =
-        "M1662.11,944.38c0-306.13-248.18-554.32-554.32-554.32-29.74,0-58.89,2.36-87.35,6.92-264.64,41.86-466.93,271.01-466.93,547.4,0,85.15,19.19,165.84,53.57,237.93,15.53,32.7,34.27,63.56,55.63,92.33h-.11l445.23,590.94,441.56-586.19h-.07c70.74-93.08,112.79-209.13,112.79-335.02ZM1107.8,1193.08c-99.14,0-184.7-57.99-224.65-141.94-15.45-32.36-24.06-68.57-24.06-106.77,0-124.05,90.76-226.86,209.54-245.64,12.76-2.06,25.85-3.11,39.17-3.11,137.37,0,248.75,111.37,248.75,248.75s-111.37,248.71-248.75,248.71Z";
-
-        const icon = {
-          path: pathData,
-          fillColor: fillColor,
-          fillOpacity: 0.95,
-          strokeColor: "white",
-          strokeWeight: 2,
-          scale: 0.07, 
-          // アンカー位置をアイコンのピンの先端（中心下の座標）に合わせる
-          anchor: new google.maps.Point(831, 1535) 
-        };
-
-        const marker = new google.maps.Marker({
-          position: apt.position,
-          map: map,
-          title: apt.name,
-          icon: icon,
-          draggable: false, 
-          // クリック不可の場合はカーソルをデフォルトにする
-          cursor: isClickable ? 'pointer' : 'default' 
-        });
-
-        // クリックイベントは isClickable が true かつ sheetUrl がある場合のみ追加
-        if (isClickable && apt.sheetUrl) {
-          marker.addListener("click", () => {
-            window.open(apt.sheetUrl, "_blank");
-          });
-        }
-      }
-    }
-
-
-    /* -------------------------------------------
-       Google Map 初期化
-       ------------------------------------------- */
     let map;
     let userMarker = null;
     let shadowMarker = null;
+    let apartmentMarkers = [];
+
+    // --- レスポンシブなスケールを計算する関数 ---
+    function getResponsiveScale() {
+      const width = window.innerWidth;
+      if (width < 600) { // スマホ
+        return { apt: 0.05, user: 18 };
+      } else if (width < 1200) { // タブレット
+        return { apt: 0.035, user: 14 };
+      } else { // デスクトップ
+        return { apt: 0.025, user: 10 };
+      }
+    }
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
@@ -303,82 +58,117 @@
         zoom: 16
       });
 
-      // ★ マーカーを追加
-      addApartmentMarkers();
+      const pathData = "M1662.11,944.38c0-306.13-248.18-554.32-554.32-554.32-29.74,0-58.89,2.36-87.35,6.92-264.64,41.86-466.93,271.01-466.93,547.4,0,85.15,19.19,165.84,53.57,237.93,15.53,32.7,34.27,63.56,55.63,92.33h-.11l445.23,590.94,441.56-586.19h-.07c70.74-93.08,112.79-209.13,112.79-335.02ZM1107.8,1193.08c-99.14,0-184.7-57.99-224.65-141.94-15.45-32.36-24.06-68.57-24.06-106.77,0-124.05,90.76-226.86,209.54-245.64,12.76-2.06,25.85-3.11,39.17-3.11,137.37,0,248.75,111.37,248.75,248.75s-111.37,248.71-248.75,248.71Z";
 
-      // -----------------------------
-      //  現在地マーカー
-      // -----------------------------
+      function updateMarkerSizes() {
+        const scales = getResponsiveScale();
+
+        apartmentMarkers.forEach(({marker, active}) => {
+          const icon = marker.getIcon();
+          icon.scale = scales.apt;
+          marker.setIcon(icon);
+        });
+
+        if (userMarker) {
+          const userIcon = userMarker.getIcon();
+          userIcon.scale = scales.user;
+          userMarker.setIcon(userIcon);
+        }
+        if (shadowMarker) {
+          const shadowIcon = shadowMarker.getIcon();
+          shadowIcon.scale = scales.user * 1.3;
+          shadowMarker.setIcon(shadowIcon);
+        }
+      }
+
+      // マンションマーカー追加
+      const scales = getResponsiveScale();
+      apartments.forEach(apt => {
+        const marker = new google.maps.Marker({
+          position: apt.position,
+          map: map,
+          title: apt.name,
+          icon: {
+            path: pathData,
+            fillColor: apt.active ? "#E53935" : "#9E9E9E",
+            fillOpacity: apt.active ? 0.95 : 0.7,
+            strokeColor: "white",
+            strokeWeight: apt.active ? 2 : 1,
+            scale: scales.apt,
+            anchor: new google.maps.Point(831, 1193)
+          }
+        });
+
+        if (apt.active) {
+          marker.addListener("mouseover", () => {
+            const icon = marker.getIcon();
+            icon.fillColor = "#FF5252";
+            marker.setIcon(icon);
+          });
+          marker.addListener("mouseout", () => {
+            const icon = marker.getIcon();
+            icon.fillColor = "#E53935";
+            marker.setIcon(icon);
+          });
+          marker.addListener("click", () => {
+            window.open(apt.sheetUrl, "_blank");
+          });
+        }
+        apartmentMarkers.push({marker, active: apt.active});
+      });
+
+      // 現在地取得
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           position => {
-            const userPos = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
+            const userPos = { lat: position.coords.latitude, lng: position.coords.longitude };
+            const currentScales = getResponsiveScale();
 
             shadowMarker = new google.maps.Marker({
-              position: userPos,
-              map: map,
-              zIndex: 1,
+              position: userPos, map: map, zIndex: 1,
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 24, 
-                fillColor: "black",
-                fillOpacity: 0.3,
-                strokeWeight: 0
+                scale: currentScales.user * 1.3,
+                fillColor: "black", fillOpacity: 0.3, strokeWeight: 0
               }
             });
 
             userMarker = new google.maps.Marker({
-              position: userPos,
-              map: map,
-              zIndex: 2,
-              title: "現在地",
+              position: userPos, map: map, zIndex: 2, title: "現在地",
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                scale: 18, 
-                fillColor: "#4285F4",
-                fillOpacity: 1,
-                strokeWeight: 2,
-                strokeColor: "white"
+                scale: currentScales.user,
+                fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 2, strokeColor: "white"
               }
             });
 
             // アニメーション
             let growing = true;
-            let currentScale = 18; 
             setInterval(() => {
+              const baseScale = getResponsiveScale().user;
+              let currentScale = userMarker.getIcon().scale;
+              
               if (growing) {
                 currentScale += 0.2;
-                if (currentScale >= 22) growing = false; 
+                if (currentScale >= baseScale * 1.2) growing = false;
               } else {
                 currentScale -= 0.2;
-                if (currentScale <= 18) growing = true; 
+                if (currentScale <= baseScale) growing = true;
               }
 
-              userMarker.setIcon({
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: currentScale,
-                fillColor: "#4285F4",
-                fillOpacity: 1,
-                strokeWeight: 2,
-                strokeColor: "white"
-              });
+              const icon = userMarker.getIcon();
+              icon.scale = currentScale;
+              userMarker.setIcon(icon);
             }, 100);
 
             map.setCenter(userPos);
-          },
-          error => {
-            console.error("Geolocation error:", error);
-            alert("現在地を取得できませんでした。");
           }
         );
-      } else {
-        alert("このブラウザは現在地取得に対応していません。");
       }
+
+      // ウィンドウサイズが変更された時にアイコンサイズを更新
+      window.addEventListener('resize', updateMarkerSizes);
     }
   </script>
-
 </body>
 </html>
