@@ -13,26 +13,123 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBaxgKJTUw1-0gl1pks-ATIc6iw1HITZyg&callback=initMap" async defer></script>
   <script>
     const apartments = [
-      // ...（データ部分は変更なしのため中略）...
-      { name: "プレサンスロジェ草津シエル", position: { lat: 35.02332033360808, lng: 135.96861511597268 }, sheetUrl: null, active: false },
-      { name: "シルクトレーテA棟", position: { lat: 35.0073924, lng: 135.9740855 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1NPxVpgBONxBvbza5W7wbYnQGInP1dRr-c3fKYpAnGe0/edit?usp=sharing", active: true },
-      { name: "シルクトレーテB棟", position: { lat: 35.0075715, lng: 135.974253 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1o772GZpl8Uu8GsAIyXoScJszCJFQN5Hc18ifRReWmkg/edit?usp=sharing", active: true },
-      { name: "ガーデンハイツヤマキ", position: { lat: 35.0042782, lng: 135.9707617 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1cIv7xgrO0vkcXxxGeviPxx05NkKw_EhfEkCOwQ3uhlA/edit?usp=sharing", active: true },
-      { name: "クランボナール", position: { lat: 35.0040314, lng: 135.9714115 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1_XvlOmBBMgIrarYD_quGHwGsWwHq9bNF71mX8MCm-Ec/edit?usp=sharing", active: true },
-      { name: "アルタ青地ビュー", position: { lat: 35.0083318, lng: 135.9750119 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1rdzT_NRjPwPjWQynSrSdYqGSgANFE4qQpfyBHL2Bo_M/edit?usp=sharing", active: true },
-      { name: "EL ORIENTE2", position: { lat: 35.0135221, lng: 135.9716834 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1b7Tml1T_bFOVJlxdKGRrZE8kJKPFej1N_rSfpcd6kK4/edit?usp=sharing", active: true },
-      { name: "Baum Dorf", position: { lat: 35.0061945, lng: 135.9606194 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1qVp3wMr0_plAG91-EpANvB-9UNTOww-WhmRZBwOTF8E/edit?usp=sharing", active: true },
-      { name: "デン・エデン", position: { lat: 35.0069946, lng: 135.9663906 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1zQJhR_R02iHvyNBdOLRvBEornEvOivDVYNV35SY2QBU/edit?usp=sharing", active: true },
-      { name: "ミニオン一期一会", position: { lat: 34.9911528, lng: 135.9644665 }, sheetUrl: "https://docs.google.com/spreadsheets/d/12ZU7wTm7n8IS4WIZwH7G4U9mBJnPlh59QOJlJ96vCgM/edit?usp=sharing", active: true },
-      { name: "パルト・プロムナードⅠ", position: { lat: 35.0099677, lng: 135.9655099 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1Z0DdHhCUaoCQRBgKckEN8bohvAyx5Zfg_6Awqn8y3_s/edit?usp=sharing", active: true },
-      { name: "パルト・プロムナードⅡ", position: { lat: 35.0100723, lng: 135.9654017 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1-FAask5Li3iYGb1UUjKhDvCf4UKUAX3vxtxLV73yFIs/edit?usp=sharing", active: true },
-      { name: "EL ORIENTE", position: { lat: 35.0137968, lng: 135.9714161 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1Pv1OciAaztZCIBkIyCxO46pHIErr5dWZJnRgCB00NcI/edit?usp=sharing", active: true },
-      { name: "コスモ草津(夜)", position: { lat: 35.0173991, lng: 135.9598398 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1o4RwGf_t96GtdFDp7jNkVDMSFr22Vhz3-ScqZ9wOoDc/edit?usp=sharing", active: true },
-      { name: "草津パークホームズ", position: { lat: 35.0122945, lng: 135.9559939 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1ThqZh2LcPcwXBIP630vr3b_ZCR26-npxVy_-347ORRY/edit?usp=sharing", active: true },
-      { name: "ココスモ草津Ⅱ (夜) ", position: { lat: 35.0176379, lng: 135.9587089 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1M8uhi42_NvaVrYCA59XLDuCrLYcn5t8XlrLv-g8-dEI/edit?usp=sharing", active: true },
-      { name: "リベルテ草津", position: { lat: 35.018516, lng: 135.9591753 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1bVCC-vuvmNAqsKfs3mvRXWGhKCE7XHeAFeJ_nwWRzWA/edit?usp=sharing", active: true },
-      { name: "アコール東草津", position: { lat: 35.0157344, lng: 135.9690205 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1rAz961SDxo0Q028rR0fBV8nyPq5A1RQeawZE34nZJFA/edit?usp=sharing", active: true },
-      { name: "Casa raffine草津", position: { lat: 35.0151292, lng: 135.9645046 }, sheetUrl: "https://docs.google.com/spreadsheets/d/1WGYDKJQj28mxtCNOBP3MVInTkD0yVOvfirfHZkh6ZHk/edit?usp=sharing", active: true }
+      {
+        name: "プレサンスロジェ草津シエル",
+        position: { lat: 35.02332033360808, lng: 135.96861511597268 },
+        sheetUrl: null, // ← URLなし
+        active: false   // ← 無効（グレー）
+      },
+      // 青地-1
+                                   {
+        name: "シルクトレーテA棟",
+        position: { lat: 35.0073924, lng: 135.9740855 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1NPxVpgBONxBvbza5W7wbYnQGInP1dRr-c3fKYpAnGe0/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                                    {
+        name: "シルクトレーテB棟",
+        position: { lat: 35.0075715, lng: 135.974253 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1o772GZpl8Uu8GsAIyXoScJszCJFQN5Hc18ifRReWmkg/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                                    {
+        name: "ガーデンハイツヤマキ",
+        position: { lat: 35.0042782, lng: 135.9707617 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1cIv7xgrO0vkcXxxGeviPxx05NkKw_EhfEkCOwQ3uhlA/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                                    {
+        name: "クランボナール",
+        position: { lat: 35.0040314, lng: 135.9714115 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1_XvlOmBBMgIrarYD_quGHwGsWwHq9bNF71mX8MCm-Ec/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                                    {
+        name: "アルタ青地ビュー",
+        position: { lat: 35.0083318, lng: 135.9750119 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1rdzT_NRjPwPjWQynSrSdYqGSgANFE4qQpfyBHL2Bo_M/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+            {
+        name: "EL ORIENTE2",
+        position: { lat: 35.0135221, lng: 135.9716834 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1b7Tml1T_bFOVJlxdKGRrZE8kJKPFej1N_rSfpcd6kK4/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+      // 追分-2
+                                          {
+        name: "Baum Dorf",
+        position: { lat: 35.0061945, lng: 135.9606194 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1qVp3wMr0_plAG91-EpANvB-9UNTOww-WhmRZBwOTF8E/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                                    {
+        name: "デン・エデン",
+        position: { lat: 35.0069946, lng: 135.9663906 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1zQJhR_R02iHvyNBdOLRvBEornEvOivDVYNV35SY2QBU/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                                    {
+        name: "ミニオン一期一会",
+        position: { lat: 34.9911528, lng: 135.9644665 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/12ZU7wTm7n8IS4WIZwH7G4U9mBJnPlh59QOJlJ96vCgM/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                                    {
+        name: "パルト・プロムナードⅠ",
+        position: { lat: 35.0099677, lng: 135.9655099 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1Z0DdHhCUaoCQRBgKckEN8bohvAyx5Zfg_6Awqn8y3_s/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                                    {
+        name: "パルト・プロムナードⅡ",
+        position: { lat: 35.0100723, lng: 135.9654017 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1-FAask5Li3iYGb1UUjKhDvCf4UKUAX3vxtxLV73yFIs/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+            {
+        name: "EL ORIENTE",
+        position: { lat: 35.0137968, lng: 135.9714161 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1Pv1OciAaztZCIBkIyCxO46pHIErr5dWZJnRgCB00NcI/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+      // 草津-3
+            {
+        name: "コスモ草津(夜)",
+        position: { lat: 35.0173991, lng: 135.9598398 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1o4RwGf_t96GtdFDp7jNkVDMSFr22Vhz3-ScqZ9wOoDc/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                  {
+        name: "草津パークホームズ",
+        position: { lat: 35.0122945, lng: 135.9559939 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1ThqZh2LcPcwXBIP630vr3b_ZCR26-npxVy_-347ORRY/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+            {
+        name: "ココスモ草津Ⅱ (夜) ",
+        position: { lat: 35.0176379, lng: 135.9587089 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1M8uhi42_NvaVrYCA59XLDuCrLYcn5t8XlrLv-g8-dEI/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                  {
+        name: "リベルテ草津",
+        position: { lat: 35.018516, lng: 135.9591753 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1bVCC-vuvmNAqsKfs3mvRXWGhKCE7XHeAFeJ_nwWRzWA/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                        {
+        name: "アコール東草津",
+        position: { lat: 35.0157344, lng: 135.9690205 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1rAz961SDxo0Q028rR0fBV8nyPq5A1RQeawZE34nZJFA/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      },
+                              {
+        name: "Casa raffine草津",
+        position: { lat: 35.0151292, lng: 135.9645046 },
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1WGYDKJQj28mxtCNOBP3MVInTkD0yVOvfirfHZkh6ZHk/edit?usp=sharing",
+        active: true   // ← 有効（赤）
+      }
     ];
 
     let map;
