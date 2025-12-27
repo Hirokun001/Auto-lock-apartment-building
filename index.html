@@ -19,7 +19,6 @@
     let userMarker = null;
     let shadowMarker = null;
 
-    // 草津市の初期位置（現在地が新宿などになった場合でも、最初はここを表示）
     const INITIAL_CENTER = { lat: 35.012, lng: 135.965 };
 
     function getMarkerScale() {
@@ -65,164 +64,104 @@
 
     async function fetchVisitStatus(apt) {
       if (!apt.active || !apt.sheetUrl) return { color: "default" };
-      const csvUrl = convertSheetToCsvUrl(apt.sheetUrl);
-      if (!csvUrl) return { color: "default" };
       try {
-        const res = await fetch(csvUrl);
+        const res = await fetch(convertSheetToCsvUrl(apt.sheetUrl));
         const text = await res.text();
         const rows = text.replace(/\r/g, "").trim().split("\n").map(r => r.split(","));
-        let totalRooms = 0;
-        let enteredCount = 0;
+        let totalRooms = 0, enteredCount = 0;
         for (let i = 3; i < rows.length; i++) {
-          const roomIdentifier = rows[i][0]?.trim();
-          const visit = rows[i][1]?.trim();
-          if (!roomIdentifier && !visit) break; 
-          totalRooms++; 
-          if (visit) enteredCount++;
+          const room = rows[i][0]?.trim(), visit = rows[i][1]?.trim();
+          if (!room && !visit) break; 
+          totalRooms++; if (visit) enteredCount++;
         } 
-        if (totalRooms === 0) return { color: "default" };
         const ratio = enteredCount / totalRooms;
         if (ratio >= 1.0) return { color: "red" };
         if (ratio >= 0.5) return { color: "yellow" };
         return { color: "default" };
-      } catch (e) {
-        return { color: "default" };
-      }
+      } catch (e) { return { color: "default" }; }
     }
 
     async function addApartmentMarkers() {
-      const statusPromises = apartments.map(apt => fetchVisitStatus(apt));
-      const statuses = await Promise.all(statusPromises);
-      const currentScales = getMarkerScale();
-
-      for (let i = 0; i < apartments.length; i++) {
-        const apt = apartments[i];
-        const status = statuses[i];
-        let fillColor = (apt.active === false) ? "#808080" : "#00A0A0";
-        if (apt.active !== false) {
-            if (status.color === "yellow") fillColor = "#FBC02D";
-            if (status.color === "red") fillColor = "#E53935";
-        }
-
-        const pathData = "M1662.11,944.38c0-306.13-248.18-554.32-554.32-554.32-29.74,0-58.89,2.36-87.35,6.92-264.64,41.86-466.93,271.01-466.93,547.4,0,85.15,19.19,165.84,53.57,237.93,15.53,32.7,34.27,63.56,55.63,92.33h-.11l445.23,590.94,441.56-586.19h-.07c70.74-93.08,112.79-209.13,112.79-335.02ZM1107.8,1193.08c-99.14,0-184.7-57.99-224.65-141.94-15.45-32.36-24.06-68.57-24.06-106.77,0-124.05,90.76-226.86,209.54-245.64,12.76-2.06,25.85-3.11,39.17-3.11,137.37,0,248.75,111.37,248.75,248.75s-111.37,248.71-248.75,248.71Z";
-
+      const statusResults = await Promise.all(apartments.map(apt => fetchVisitStatus(apt)));
+      const scales = getMarkerScale();
+      apartments.forEach((apt, i) => {
+        let fillColor = !apt.active ? "#808080" : (statusResults[i].color === "red" ? "#E53935" : (statusResults[i].color === "yellow" ? "#FBC02D" : "#00A0A0"));
         const marker = new google.maps.Marker({
           position: apt.position,
           map: map,
           title: apt.name,
           icon: {
-            path: pathData,
-            fillColor: fillColor,
-            fillOpacity: 0.95,
-            strokeColor: "white",
-            strokeWeight: 2,
-            scale: currentScales.apt,
-            anchor: new google.maps.Point(831, 1535) 
+            path: "M1662.11,944.38c0-306.13-248.18-554.32-554.32-554.32-29.74,0-58.89,2.36-87.35,6.92-264.64,41.86-466.93,271.01-466.93,547.4,0,85.15,19.19,165.84,53.57,237.93,15.53,32.7,34.27,63.56,55.63,92.33h-.11l445.23,590.94,441.56-586.19h-.07c70.74-93.08,112.79-209.13,112.79-335.02ZM1107.8,1193.08c-99.14,0-184.7-57.99-224.65-141.94-15.45-32.36-24.06-68.57-24.06-106.77,0-124.05,90.76-226.86,209.54-245.64,12.76-2.06,25.85-3.11,39.17-3.11,137.37,0,248.75,111.37,248.75,248.75s-111.37,248.71-248.75,248.71Z",
+            fillColor: fillColor, fillOpacity: 0.95, strokeColor: "white", strokeWeight: 2, scale: scales.apt, anchor: new google.maps.Point(831, 1535)
           }
         });
-
-        if (apt.active !== false && apt.sheetUrl) {
-          marker.addListener("click", () => { window.open(apt.sheetUrl, "_blank"); });
-        }
+        if (apt.active && apt.sheetUrl) marker.addListener("click", () => window.open(apt.sheetUrl, "_blank"));
         apartmentMarkerObjects.push(marker);
-      }
+      });
     }
 
     function initMap() {
-      // 1. 最初は草津市をセンターに設定（新宿に飛ばないための保険）
-      map = new google.maps.Map(document.getElementById("map"), {
-        center: INITIAL_CENTER,
-        zoom: 16
-      });
-
+      map = new google.maps.Map(document.getElementById("map"), { center: INITIAL_CENTER, zoom: 16 });
       addApartmentMarkers();
 
       if (navigator.geolocation) {
-        // 高精度オプションを追加（PCブラウザの誤検出を減らす努力）
-        const geoOptions = {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0
-        };
-
-        navigator.geolocation.getCurrentPosition(
+        // watchPosition に変更して継続的に取得を試みる
+        navigator.geolocation.watchPosition(
           position => {
             const userPos = { lat: position.coords.latitude, lng: position.coords.longitude };
-            const currentScales = getMarkerScale();
+            const scales = getMarkerScale();
+            
+            // 滋賀県周辺か判定（範囲を少し広げました）
+            const isNearShiga = (userPos.lat > 34.5 && userPos.lat < 35.5 && userPos.lng > 135.5 && userPos.lng < 136.5);
 
-            // 取得した現在地が明らかに遠い（滋賀県から離れすぎている）場合はセンター移動を無視する
-            // ※必要に応じてこの緯度経度範囲を調整してください
-            const isNearShiga = (userPos.lat > 34.0 && userPos.lat < 36.0 && userPos.lng > 135.0 && userPos.lng < 137.0);
-
-            shadowMarker = new google.maps.Marker({
-              position: userPos,
-              map: map,
-              zIndex: 1,
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: currentScales.user * 1.4, 
-                fillColor: "black", fillOpacity: 0.2, strokeWeight: 0
-              }
-            });
-
-            userMarker = new google.maps.Marker({
-              position: userPos,
-              map: map,
-              zIndex: 2,
-              title: "現在地",
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: currentScales.user, 
-                fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 2, strokeColor: "white"
-              }
-            });
-
-            let growing = true;
-            setInterval(() => {
-              if (!userMarker) return;
-              const baseScale = getMarkerScale().user;
-              let currentScale = userMarker.getIcon().scale;
-              if (growing) {
-                currentScale += 0.2;
-                if (currentScale >= baseScale * 1.25) growing = false; 
-              } else {
-                currentScale -= 0.2;
-                if (currentScale <= baseScale) growing = true; 
-              }
-              const icon = userMarker.getIcon();
-              icon.scale = currentScale;
-              userMarker.setIcon(icon);
-            }, 100);
-
-            // 滋賀県付近の場合のみ、画面を現在地に移動させる
-            if (isNearShiga) {
-              map.setCenter(userPos);
+            if (!userMarker) {
+              shadowMarker = new google.maps.Marker({
+                position: userPos, map: map, zIndex: 1,
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: scales.user * 1.4, fillColor: "black", fillOpacity: 0.2, strokeWeight: 0 }
+              });
+              userMarker = new google.maps.Marker({
+                position: userPos, map: map, zIndex: 2, title: "現在地",
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: scales.user, fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 2, strokeColor: "white" }
+              });
+              if (isNearShiga) map.setCenter(userPos);
+            } else {
+              userMarker.setPosition(userPos);
+              shadowMarker.setPosition(userPos);
             }
           },
           error => {
-            console.warn("Geolocation failed or denied.");
+            // エラー時、iPadで何が起きているか確認するためのアラート
+            let msg = "";
+            switch(error.code) {
+              case 1: msg = "位置情報の利用が許可されていません。設定を確認してください。"; break;
+              case 2: msg = "位置情報の取得に失敗しました。電波の良い場所で試してください。"; break;
+              case 3: msg = "タイムアウトしました。"; break;
+            }
+            if(msg) console.warn(msg);
           },
-          geoOptions
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
+      } else {
+        alert("お使いのブラウザは位置情報に対応していません。");
       }
 
+      // アニメーション
+      setInterval(() => {
+        if (!userMarker) return;
+        const base = getMarkerScale().user;
+        let s = userMarker.getIcon().scale;
+        this.growing = this.growing === undefined ? true : this.growing;
+        if (this.growing) { s += 0.2; if (s >= base * 1.25) this.growing = false; }
+        else { s -= 0.2; if (s <= base) this.growing = true; }
+        const icon = userMarker.getIcon(); icon.scale = s; userMarker.setIcon(icon);
+      }, 100);
+
       window.addEventListener('resize', () => {
-        const scales = getMarkerScale();
-        apartmentMarkerObjects.forEach(m => {
-          const icon = m.getIcon();
-          icon.scale = scales.apt;
-          m.setIcon(icon);
-        });
-        if (userMarker) {
-          const icon = userMarker.getIcon();
-          icon.scale = scales.user;
-          userMarker.setIcon(icon);
-        }
+        const s = getMarkerScale();
+        apartmentMarkerObjects.forEach(m => { const i = m.getIcon(); i.scale = s.apt; m.setIcon(i); });
+        if (userMarker) { const i = userMarker.getIcon(); i.scale = s.user; userMarker.setIcon(i); }
       });
     }
   </script>
 </body>
 </html>
-
-
-
