@@ -13,8 +13,22 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBaxgKJTUw1-0gl1pks-ATIc6iw1HITZyg&callback=initMap" async defer></script>
 
 <script>
-    // ★★★ 共通で利用するシートID (gid) を定義します ★★★
-    const DEFAULT_GID = "1854135294"; 
+    /* ===============================
+      共通設定
+    ================================ */
+    const DEFAULT_GID = "1854135294";
+    let map;
+    let apartmentMarkers = [];
+
+    /* ===============================
+      画面サイズに応じたアイコンサイズ
+    ================================ */
+    function getMarkerScale() {
+      const w = window.innerWidth;
+      if (w <= 600) return 0.07;     // スマホ
+      if (w <= 1024) return 0.055;   // タブレット
+      return 0.045;                 // PC
+    }
 
     /* -------------------------------------------
        マンションデータ
