@@ -24,8 +24,11 @@
 
     function getMarkerScale() {
       const w = window.innerWidth;
+      // 【スマホ】
       if (w <= 600) return { apt: 0.07, user: 18 };
+      // 【タブレット】
       if (w <= 1024) return { apt: 0.045, user: 12 };
+      // 【PC・その他】
       return { apt: 0.040, user: 10 };
     }
 
@@ -220,5 +223,6 @@
   </script>
 </body>
 </html>
+
 
 
