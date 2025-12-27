@@ -123,7 +123,7 @@
                 position: userPos, map: map, zIndex: 2, title: "現在地",
                 icon: { path: google.maps.SymbolPath.CIRCLE, scale: scales.user, fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 2, strokeColor: "white" }
               });
-              if (isNearShiga) map.setCenter(userPos);
+              map.setCenter(userPos);
             } else {
               userMarker.setPosition(userPos);
               shadowMarker.setPosition(userPos);
