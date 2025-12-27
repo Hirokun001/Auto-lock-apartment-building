@@ -19,6 +19,9 @@
     let userMarker = null;
     let shadowMarker = null;
 
+    // 草津市の初期位置（現在地が新宿などになった場合でも、最初はここを表示）
+    const INITIAL_CENTER = { lat: 35.012, lng: 135.965 };
+
     function getMarkerScale() {
       const w = window.innerWidth;
       if (w <= 600) return { apt: 0.07, user: 18 };
@@ -65,14 +68,11 @@
         const res = await fetch(csvUrl);
         const text = await res.text();
         const rows = text.replace(/\r/g, "").trim().split("\n").map(r => r.split(","));
-        const roomIdentifierCol = 0; 
-        const visitCol = 1; 
         let totalRooms = 0;
         let enteredCount = 0;
         for (let i = 3; i < rows.length; i++) {
-          const row = rows[i];
-          const roomIdentifier = row[roomIdentifierCol]?.trim().replace(/^"|"$/g, "");
-          const visit = row[visitCol]?.trim().replace(/^"|"$/g, "");
+          const roomIdentifier = rows[i][0]?.trim();
+          const visit = rows[i][1]?.trim();
           if (!roomIdentifier && !visit) break; 
           totalRooms++; 
           if (visit) enteredCount++;
@@ -83,7 +83,6 @@
         if (ratio >= 0.5) return { color: "yellow" };
         return { color: "default" };
       } catch (e) {
-        console.error("Fetch error:", e);
         return { color: "default" };
       }
     }
@@ -127,18 +126,30 @@
     }
 
     function initMap() {
+      // 1. 最初は草津市をセンターに設定（新宿に飛ばないための保険）
       map = new google.maps.Map(document.getElementById("map"), {
-        center: apartments[0].position,
+        center: INITIAL_CENTER,
         zoom: 16
       });
 
       addApartmentMarkers();
 
       if (navigator.geolocation) {
+        // 高精度オプションを追加（PCブラウザの誤検出を減らす努力）
+        const geoOptions = {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        };
+
         navigator.geolocation.getCurrentPosition(
           position => {
             const userPos = { lat: position.coords.latitude, lng: position.coords.longitude };
             const currentScales = getMarkerScale();
+
+            // 取得した現在地が明らかに遠い（滋賀県から離れすぎている）場合はセンター移動を無視する
+            // ※必要に応じてこの緯度経度範囲を調整してください
+            const isNearShiga = (userPos.lat > 34.0 && userPos.lat < 36.0 && userPos.lng > 135.0 && userPos.lng < 137.0);
 
             shadowMarker = new google.maps.Marker({
               position: userPos,
@@ -163,7 +174,6 @@
               }
             });
 
-            // アニメーション (中心がずれないよう設定を維持)
             let growing = true;
             setInterval(() => {
               if (!userMarker) return;
@@ -181,8 +191,15 @@
               userMarker.setIcon(icon);
             }, 100);
 
-            map.setCenter(userPos);
-          }
+            // 滋賀県付近の場合のみ、画面を現在地に移動させる
+            if (isNearShiga) {
+              map.setCenter(userPos);
+            }
+          },
+          error => {
+            console.warn("Geolocation failed or denied.");
+          },
+          geoOptions
         );
       }
 
@@ -197,11 +214,6 @@
           const icon = userMarker.getIcon();
           icon.scale = scales.user;
           userMarker.setIcon(icon);
-        }
-        if (shadowMarker) {
-          const icon = shadowMarker.getIcon();
-          icon.scale = scales.user * 1.4;
-          shadowMarker.setIcon(icon);
         }
       });
     }
